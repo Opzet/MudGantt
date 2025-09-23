@@ -6,6 +6,10 @@ class GanttTask {
         this.shapes = {rect: null, links: []};
         this.startDate = null;
         this.endDate = null;
+        this.zoom = data.zoom ?? 1.0;
+        if (parseFloat(this.zoom) === NaN) {
+            this.zoom = 1.0;
+        }
 
         if (data.startDate) {
             this.startDate = new Date(data.startDate);
@@ -20,11 +24,11 @@ class GanttTask {
         this.startEpochs ??= this.endEpochs;
         this.endEpochs ??= this.startEpochs;
 
-	if(!this.startEpochs) {
-		throw new Error("No date set for task");
-	}
+	    if(!this.startEpochs) {
+		    throw new Error("No date set for task");
+	    }
 
-	this.range = this.endEpochs - this.startEpochs;
+	    this.range = this.endEpochs - this.startEpochs;
     }
 }
 
@@ -75,7 +79,8 @@ class GanntChart {
         observer.observe(this.container);
 
         this.options = {};
-        this.options.timelineEpochPadding = 1000 * 3600 * 24;
+        this.options.defaultTimelineEpochPadding = 1000 * 3600 * 24;
+        this.options.timelineEpochPadding = this.options.defaultTimelineEpochPadding;
         this.options.axisPadding = 5;
         this.options.grid = 'auto';
         this.options.axisHeight = 50;
@@ -92,6 +97,24 @@ class GanntChart {
         this.options.textOffsetY = 4;
 
         this.tasks = [];
+    }
+
+    zoomIn(amount) {
+        amount ??= 1;
+        this.options.timelineEpochPadding -= amount * 1000 * 240;
+        this.updateData(this.data);
+    }
+
+    zoomOut(amount) {
+        amount ??= 1;
+        this.options.timelineEpochPadding += amount * 1000 * 240;
+        this.updateData(this.data);
+    }
+
+    resetZoom() {
+        amount ??= 1;
+        this.options.timelineEpochPadding = this.options.defaultTimelineEpochPadding;
+        this.updateData(this.data);
     }
 
     destroy() {
@@ -1062,26 +1085,49 @@ class GanntChart {
 
             if (task && nx >= task.left && nx < task.right && ny >= task.top && ny < task.bottom) {
                 if (!this.readOnly) {
+                    console.log("Opening context-menu within task", task);
+
                     if (this.callback) {
-                        console.log("OnTaskContextMenuAsync");
                         this.callback.invokeMethodAsync("OnTaskContextMenuAsync", task.id, event.clientX, event.clientY);
                     }
 
                     // Browser support?
                     if (Object.hasOwn(HTMLElement.prototype, "popover")) {
-                        console.log("OnTaskContextMenuAsync, showing popover..");
                         const popoverSelector = "#" + this.id + "__popover";
                         const popover = document.querySelector(popoverSelector);
                         popover.style.left = event.clientX + "px";
                         popover.style.top = event.clientY + "px";
-                        console.log(popover.style, event);
                         popover.showPopover();
                     }
 
                     event.stopPropagation();
                     event.preventDefault();
+                    return;
                 }
             }
+        }
+
+        // Clicked outside any task
+        if (!this.readOnly) {
+            console.log("Opening context-menu outside task");
+            if (this.callback) {
+                this.callback.invokeMethodAsync("OnTaskContextMenuAsync", null, event.clientX, event.clientY);
+            }
+
+            // Browser support?
+            if (Object.hasOwn(HTMLElement.prototype, "popover")) {
+
+                console.log("Showing popover..");
+
+                const popoverSelector = "#" + this.id + "__popover";
+                const popover = document.querySelector(popoverSelector);
+                popover.style.left = event.clientX + "px";
+                popover.style.top = event.clientY + "px";
+                popover.showPopover();
+            }
+
+            event.stopPropagation();
+            event.preventDefault();
         }
     }
 
@@ -1203,5 +1249,20 @@ export function destroyGantt(id) {
     if (window.blazorGanttCharts[id]) {
         window.blazorGanttCharts[id].destroy();
         delete window.blazorGanttCharts[id]
+    }
+}
+export function resetZooomGantt(id) {
+    if (window.blazorGanttCharts[id]) {
+        window.blazorGanttCharts[id].resetZoom();
+    }
+}
+export function zoomInGantt(id, amount) {
+    if (window.blazorGanttCharts[id]) {
+        window.blazorGanttCharts[id].zoomIn(amount);
+    }
+}
+export function zoomOutGantt(id, amount) {
+    if (window.blazorGanttCharts[id]) {
+        window.blazorGanttCharts[id].zoomOut(amount);
     }
 }

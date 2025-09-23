@@ -61,7 +61,7 @@ namespace MudGantt
         /// <summary>
         /// The context menu is opening
         /// </summary>
-        [Parameter] public EventCallback<MudGanttTask> ContextMenuOpening { get; set; }
+        [Parameter] public EventCallback<MudGanttTask?> ContextMenuOpening { get; set; }
 
         /// <summary>
         /// Tasks changed
@@ -86,7 +86,7 @@ namespace MudGantt
         /// <summary>
         /// Popover content shown when the user right-clicks on a task.
         /// </summary>
-        [Parameter] public RenderFragment<MudGanttTask>? TaskContextMenu { get; set; }
+        [Parameter] public RenderFragment<MudGanttTask?>? TaskContextMenu { get; set; }
 
         public string CssClass => new CssBuilder("mud-gantt")
             .AddClass("mud-color-" + Color.ToDescriptionString().ToLowerInvariant(), true)
@@ -148,6 +148,45 @@ namespace MudGantt
             }
         }
 
+        /// <summary>
+        /// Zooms in
+        /// </summary>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        public async Task ZoomInAsync(double amount = 1000)
+        {
+            if (_interop is not null)
+            {
+                await _interop.ZoomInAsync(Id, amount);
+            }
+        }
+
+        /// <summary>
+        /// Zooms out
+        /// </summary>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        public async Task ZoomOutAsync(double amount = 1000)
+        {
+            if (_interop is not null)
+            {
+                await _interop.ZoomOutAsync(Id, amount);
+            }
+        }
+
+        /// <summary>
+        /// Resets the zoom to the initial state
+        /// </summary>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        public async Task ResetZoomAsync()
+        {
+            if (_interop is not null)
+            {
+                await _interop.ResetZoomAsync(Id);
+            }
+        }
+
         private GanttData CreateData()
         {
             return new GanttData { Items = Tasks ?? [], Events = Events ?? [], ReadOnly = ReadOnly, Dense = Dense, Size = Size };
@@ -161,11 +200,20 @@ namespace MudGantt
             }
         }
 
-        internal async Task OnTaskContextMenuAsync(string id, int x, int y)
+        internal async Task OnTaskContextMenuAsync(string? id, int x, int y)
         {
             if (Tasks is null)
             {
                 return;
+            }
+            if (id is null)
+            {
+                // Context menu open outside any task
+                _menuOpen = true;
+                _contextTask = null;
+
+                await ContextMenuOpening.InvokeAsync(null);
+                await InvokeAsync(this.StateHasChanged);
             }
             var task = Tasks.Where(x => x.Id == id).FirstOrDefault();
             if (task is not null)
@@ -174,7 +222,6 @@ namespace MudGantt
                 _contextTask = task;
 
                 await ContextMenuOpening.InvokeAsync(task);
-
                 await InvokeAsync(this.StateHasChanged);
             }
         }   

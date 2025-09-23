@@ -17,8 +17,11 @@
     @bind-Tasks="@_tasks" Events="@_events" Color="@_color" Variant="@_variant" ReadOnly="@_readOnly" Dense="@_dense" Size="@_size">
 
     <TaskContextMenu>
-        <MudMenuItem OnClick="() => MakeTaskBlue(context)">Make it blue</MudMenuItem>
-        <MudMenuItem Icon="@Icons.Material.Outlined.Delete" OnClick="() => DeleteTask(context)">Delete @context.Name</MudMenuItem>
+		@if(context is not null)
+		{
+			<MudMenuItem OnClick="() => MakeTaskBlue(context)">Make it blue</MudMenuItem>
+			<MudMenuItem Icon="@Icons.Material.Outlined.Delete" OnClick="() => DeleteTask(context)">Delete @context.Name</MudMenuItem>
+		}
     </TaskContextMenu>
 
 </MudGanttChart>

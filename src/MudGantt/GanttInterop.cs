@@ -25,13 +25,28 @@ namespace MudGantt
         internal async Task CreateAsync(string id, object callback)
         {
             var module = await moduleTask.Value;
-            await module.InvokeAsync<string>("initGantt", id, $"#{id}", callback);
+            await module.InvokeVoidAsync("initGantt", id, $"#{id}", callback);
         }
 
         internal async Task UpdateAsync(string id, GanttData data)
         {
             var module = await moduleTask.Value;
-            await module.InvokeAsync<string>("updateGantt", id, data);
+            await module.InvokeVoidAsync("updateGantt", id, data);
+        }
+        internal async Task ResetZoomAsync(string id)
+        {
+            var module = await moduleTask.Value;
+            await module.InvokeVoidAsync("resetZoomGantt", id);
+        }
+        internal async Task ZoomInAsync(string id, double amount = 1000.0)
+        {
+            var module = await moduleTask.Value;
+            await module.InvokeVoidAsync("zoomInGantt", id, amount);
+        }
+        internal async Task ZoomOutAsync(string id, double amount = 1000.0)
+        {
+            var module = await moduleTask.Value;
+            await module.InvokeVoidAsync("zoomOutGantt", id, amount);
         }
     }
 }

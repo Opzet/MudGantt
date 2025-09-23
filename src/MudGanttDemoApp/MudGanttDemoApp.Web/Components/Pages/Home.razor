@@ -12,13 +12,19 @@
 
 <h1>MudGanttChart</h1>
 
-<MudGanttChart 
+<MudGanttChart @ref="_mudGanttChart"
     TaskClicked="OnTaskClicked"
     @bind-Tasks="@_tasks" Events="@_events" Color="@_color" Variant="@_variant" ReadOnly="@_readOnly" Dense="@_dense" Size="@_size">
 
     <TaskContextMenu>
-        <MudMenuItem OnClick="() => MakeTaskBlue(context)">Make it blue</MudMenuItem>
-        <MudMenuItem Icon="@Icons.Material.Outlined.Delete" OnClick="() => DeleteTask(context)">Delete @context.Name</MudMenuItem>
+		<MudMenuItem Icon="@Icons.Material.Filled.ZoomIn" OnClick="ZoomIn">Zoom in</MudMenuItem>
+		<MudMenuItem Icon="@Icons.Material.Filled.ZoomOut" OnClick="ZoomOut">Zoom out</MudMenuItem>
+		@if(context is not null)
+		{
+			<MudMenuItem OnClick="() => MakeTaskBlue(context)">Make it blue</MudMenuItem>
+			<MudMenuItem Icon="@Icons.Material.Outlined.Delete" OnClick="() => DeleteTask(context)">Delete @context.Name</MudMenuItem>
+		}
+		
     </TaskContextMenu>
 
 </MudGanttChart>
@@ -68,17 +74,28 @@
 </MudStack>
 
 @code {
-    private Color _color = Color.Primary;
-    private Variant _variant = Variant.Filled;
-    private Size _size = Size.Medium;
-    private bool _readOnly = false;
-    private bool _darkMode = true;
-    private bool _dense = false;
+	private Color _color = Color.Primary;
+	private Variant _variant = Variant.Filled;
+	private Size _size = Size.Medium;
+	private bool _readOnly = false;
+	private bool _darkMode = true;
+	private bool _dense = false;
+	private MudGanttChart _mudGanttChart = default!;
 
-    private void MakeTaskBlue(MudGanttTask task)
-    {
-        task.Color = "#1176D3"; // Blue color"
-    }
+	private void MakeTaskBlue(MudGanttTask task)
+	{
+		task.Color = "#1176D3"; // Blue color"
+	}
+
+	private async Task ZoomIn()
+	{
+		await _mudGanttChart.ZoomInAsync();
+	}
+	private async Task ZoomOut()
+	{
+		await _mudGanttChart.ZoomOutAsync();
+	}
+
     private void DeleteTask(MudGanttTask task)
     {
         snackbar.Add("Delete " + task.Name);

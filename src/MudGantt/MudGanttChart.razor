@@ -12,10 +12,7 @@
     @if (TaskContextMenu is not null)
     {
         <div popover id="@PopoverId">
-            @if (_contextTask is not null)
-            {
-                <MudMenu @bind-Open="_menuOpen">@TaskContextMenu(_contextTask)</MudMenu>
-            }
+            <MudMenu @bind-Open="_menuOpen">@TaskContextMenu(_contextTask)</MudMenu>
         </div>
     }
 </div>
