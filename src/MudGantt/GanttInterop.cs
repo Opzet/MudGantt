@@ -17,8 +17,26 @@ namespace MudGantt
         {
             if (moduleTask.IsValueCreated)
             {
+                try
+                {
+                    var module = await moduleTask.Value;
+                    await module.DisposeAsync();
+                }
+                catch (JSDisconnectedException)
+                {
+                }
+            }
+        }
+
+        internal async Task DestroyAsync(string id)
+        {
+            try
+            {
                 var module = await moduleTask.Value;
-                await module.DisposeAsync();
+                await module.InvokeVoidAsync("destroyGantt", id);
+            }
+            catch (JSDisconnectedException)
+            {
             }
         }
 

@@ -1,0 +1,264 @@
+@page "/attendance"
+
+@using MudGanttDemoApp.Web.GanttApi
+@inject ISnackbar Snackbar
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Attendance View Example</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="attendance-page pa-0 ma-0">
+    <MudPaper Class="pa-2 mb-2" Elevation="0">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Wrap="Wrap.Wrap">
+            <MudText Typo="Typo.h5">Attendance View Example</MudText>
+            <MudSpacer />
+            <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.Sync" OnClick="ReloadAsync">
+                Reload
+            </MudButton>
+            <MudSwitch @bind-Value="_showEmployeeList" Color="Color.Primary">Show employee list</MudSwitch>
+            <MudButtonGroup Variant="Variant.Outlined" Color="Color.Primary">
+                <MudButton StartIcon="@Icons.Material.Filled.ZoomIn" OnClick="ZoomIn">Zoom In</MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.ZoomOut" OnClick="ZoomOut">Zoom Out</MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.FitScreen" OnClick="ResetZoom">Reset</MudButton>
+            </MudButtonGroup>
+        </MudStack>
+    </MudPaper>
+
+    <MudPaper Elevation="0" Class="attendance-surface" Style="height: 420px; overflow: hidden;">
+        <MudStack Row="true" Style="height:100%;">
+            @if (_showEmployeeList)
+            {
+                <MudPaper Elevation="0" Class="attendance-list-panel" Style="@EmployeeListStyle">
+                    <div style="height:@($"{AxisHeaderHeight}px")"></div>
+                    @foreach (var row in _tasks)
+                    {
+                        <div class="attendance-row" style="height:@($"{RowHeight}px")">
+                            <MudTooltip Text="@row.Name">
+                                <MudText Typo="Typo.body2" Class="attendance-row-text">@row.Name</MudText>
+                            </MudTooltip>
+                        </div>
+                    }
+                </MudPaper>
+            }
+
+            <MudPaper Elevation="0" Class="flex-grow-1" Style="min-width:0; overflow:auto;">
+                <div class="attendance-gantt-scroll">
+                    <div class="attendance-gantt-canvas">
+                        <MudGanttChart @ref="_chart"
+                                       @bind-Tasks="_tasks"
+                                       Events="_events"
+                                       Dense="@_dense"
+                                       Size="@_size"
+                                       ReadOnly="true"
+                                       Color="Color.Info"
+                                       Variant="Variant.Outlined" />
+                    </div>
+                </div>
+            </MudPaper>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudGanttChart _chart = default!;
+    private bool _showEmployeeList = true;
+    private HttpClient _api = default!;
+    private readonly bool _dense = true;
+    private readonly Size _size = Size.Small;
+    private bool _applyDefaultZoom;
+
+    private string EmployeeListStyle => $"width: {GetEmployeeListWidth()}px; overflow:auto; border-right:1px solid var(--mud-palette-divider);";
+
+    private int AxisHeaderHeight => _size switch
+    {
+        Size.Small => 40,
+        Size.Large => 60,
+        _ => 50
+    };
+
+    private int RowHeight => TaskHeight + TaskSpacing;
+
+    private int TaskHeight => _size switch
+    {
+        Size.Small => 35,
+        Size.Large => 60,
+        _ => 50
+    };
+
+    private int TaskSpacing => _dense ? 2 : 10;
+
+    private readonly IReadOnlyList<MudGanttEvent> _events = [];
+
+    private IReadOnlyList<MudGanttTask> _tasks =
+    [
+        new MudGanttTask
+        {
+            Id = "2208",
+            Name = "2208 : Armin Francisco",
+            StartDate = new DateTimeOffset(2025, 1, 1, 0, 30, 0, TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2025, 1, 1, 11, 56, 0, TimeSpan.Zero),
+            Color = "#9ec9d1"
+        },
+        new MudGanttTask
+        {
+            Id = "2147",
+            Name = "2147 : Rodel Gonzales",
+            StartDate = new DateTimeOffset(2025, 1, 1, 0, 30, 0, TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2025, 1, 1, 11, 40, 0, TimeSpan.Zero),
+            Color = "#9ec9d1"
+        },
+        new MudGanttTask
+        {
+            Id = "3633",
+            Name = "3633 : Kristopher Ralph",
+            StartDate = new DateTimeOffset(2025, 1, 1, 4, 21, 0, TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2025, 1, 1, 7, 45, 0, TimeSpan.Zero),
+            Color = "#9ec9d1"
+        }
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _api = HttpClientFactory.CreateClient();
+        _api.BaseAddress = new Uri(NavigationManager.BaseUri);
+        await ReloadAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_applyDefaultZoom)
+        {
+            _applyDefaultZoom = false;
+            await _chart.ResetZoomAsync();
+            await _chart.ZoomInAsync(120);
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        try
+        {
+            var rows = await _api.GetFromJsonAsync<List<GanttTaskDto>>("api/gantt/tasks");
+            if (rows is null)
+            {
+                Snackbar.Add("No attendance data returned from API.", Severity.Warning);
+                return;
+            }
+
+            _tasks = rows
+                .OrderBy(x => x.Name)
+                .Select((x, index) =>
+                {
+                    var employeeId = ResolveEmployeeId(x.Id, index);
+                    return new MudGanttTask
+                    {
+                        Id = employeeId,
+                        Name = BuildAttendanceLabel(employeeId, x.Name, x.StartDate, x.EndDate),
+                    StartDate = x.StartDate,
+                    EndDate = x.EndDate,
+                    Color = string.IsNullOrWhiteSpace(x.Color) ? "#9ec9d1" : x.Color,
+                    Progress = null,
+                    Links = []
+                    };
+                })
+                .ToList();
+
+            _applyDefaultZoom = _tasks.Count > 0;
+
+            if (_tasks.Count == 0)
+            {
+                Snackbar.Add("Attendance list is empty.", Severity.Info);
+            }
+        }
+        catch
+        {
+            Snackbar.Add("Failed to load attendance data from API.", Severity.Error);
+        }
+    }
+
+    private static string ResolveEmployeeId(string rawId, int index)
+    {
+        if (rawId.Length == 4 && rawId.All(char.IsDigit))
+        {
+            return rawId;
+        }
+
+        var digits = new string(rawId.Where(char.IsDigit).ToArray());
+        if (digits.Length >= 4)
+        {
+            return digits[^4..];
+        }
+
+        return (2200 + index).ToString("0000");
+    }
+
+    private static string BuildAttendanceLabel(string employeeId, string name, DateTimeOffset? startDate, DateTimeOffset? endDate)
+    {
+        var input = startDate?.ToString("HH:mm") ?? "--:--";
+        var output = endDate?.ToString("HH:mm") ?? "--:--";
+        return $"{employeeId} : {name}    In: {input} | Out: {output}";
+    }
+
+    private int GetEmployeeListWidth()
+    {
+        const int minWidth = 380;
+        const int maxWidth = 720;
+        const int basePadding = 56;
+        const double charWidth = 8.3;
+
+        if (_tasks.Count == 0)
+        {
+            return minWidth;
+        }
+
+        var longest = _tasks.Max(x => x.Name?.Length ?? 0);
+        var estimated = (int)Math.Ceiling(longest * charWidth) + basePadding;
+        return Math.Clamp(estimated, minWidth, maxWidth);
+    }
+
+    private async Task ZoomIn() => await _chart.ZoomInAsync(15);
+    private async Task ZoomOut() => await _chart.ZoomOutAsync(15);
+    private async Task ResetZoom() => await _chart.ResetZoomAsync();
+}
+
+<style>
+    .attendance-page {
+        width: calc(100% + 3rem);
+        margin-left: -1.5rem;
+        margin-right: -1.5rem;
+    }
+
+    .attendance-surface {
+        border: 0;
+        border-radius: 0;
+    }
+
+    .attendance-row {
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--mud-palette-divider);
+        padding: 0 8px;
+        box-sizing: border-box;
+    }
+
+    .attendance-row-text {
+        width: 100%;
+        font-size: 0.80rem;
+        line-height: 1.1rem;
+        overflow: hidden;
+        text-overflow: clip;
+        white-space: nowrap;
+    }
+
+    .attendance-gantt-scroll {
+        width: 100%;
+        height: 100%;
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+
+    .attendance-gantt-canvas {
+        min-width: 1400px;
+        height: 100%;
+    }
+</style>

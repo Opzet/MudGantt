@@ -196,8 +196,11 @@ namespace MudGantt
         {
             if (_interop is not null)
             {
+                await _interop.DestroyAsync(Id);
                 await _interop.DisposeAsync();
             }
+
+            _callback?.Dispose();
         }
 
         internal async Task OnTaskContextMenuAsync(string? id, int x, int y)
