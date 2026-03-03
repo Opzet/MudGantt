@@ -1,110 +1,550 @@
-﻿@page "/"
-@using MudBlazor
+@page "/"
 @using MudBlazor.Utilities
 @inject ISnackbar snackbar
+@inject IDialogService DialogService
 
-<PageTitle>Home</PageTitle>
+<PageTitle>MudGantt - Task List Demo</PageTitle>
 
 <MudThemeProvider IsDarkMode="@_darkMode" />
 <MudSnackbarProvider />
 <MudPopoverProvider />
 <MudDialogProvider MaxWidth="MaxWidth.ExtraLarge" />
 
-<h1>MudGanttChart</h1>
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    
+    <!-- Header -->
+    <MudPaper Elevation="0" Class="mb-4">
+        <MudText Typo="Typo.h3" Class="mb-2">
+            <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Class="mr-2" />
+            MudGantt Chart with Synchronized Task List
+        </MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary">
+            Interactive Gantt chart with real-time task list synchronization, inline editing, and comprehensive project management features
+        </MudText>
+    </MudPaper>
 
-<MudGanttChart @ref="_mudGanttChart"
-    TaskClicked="OnTaskClicked"
-    @bind-Tasks="@_tasks" Events="@_events" Color="@_color" Variant="@_variant" ReadOnly="@_readOnly" Dense="@_dense" Size="@_size">
+    <!-- Toolbar -->
+    <MudPaper Class="pa-4 mb-4" Elevation="2">
+        <MudStack Row Spacing="2" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+            <MudButton StartIcon="@Icons.Material.Filled.Add" 
+                       Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       OnClick="AddNewTask">
+                Add Task
+            </MudButton>
+            <MudButton StartIcon="@Icons.Material.Filled.Delete" 
+                       Variant="Variant.Outlined" 
+                       Color="Color.Error" 
+                       OnClick="DeleteSelectedTask"
+                       Disabled="@(_selectedTask == null)">
+                Delete Task
+            </MudButton>
+            <MudSpacer />
+            <MudButtonGroup Variant="Variant.Outlined" Color="Color.Primary">
+                <MudButton StartIcon="@Icons.Material.Filled.ZoomIn" OnClick="ZoomIn">Zoom In</MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.ZoomOut" OnClick="ZoomOut">Zoom Out</MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.FitScreen" OnClick="ResetZoom">Reset</MudButton>
+            </MudButtonGroup>
+            <MudIconButton Icon="@(_showSettings ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.Settings)" 
+                           Color="Color.Primary" 
+                           OnClick="() => _showSettings = !_showSettings"
+                           Title="Toggle Settings" />
+        </MudStack>
+    </MudPaper>
 
-    <TaskContextMenu>
-		<MudMenuItem Icon="@Icons.Material.Filled.ZoomIn" OnClick="ZoomIn">Zoom in</MudMenuItem>
-		<MudMenuItem Icon="@Icons.Material.Filled.ZoomOut" OnClick="ZoomOut">Zoom out</MudMenuItem>
-		@if(context is not null)
-		{
-			<MudMenuItem OnClick="() => MakeTaskBlue(context)">Make it blue</MudMenuItem>
-			<MudMenuItem Icon="@Icons.Material.Outlined.Delete" OnClick="() => DeleteTask(context)">Delete @context.Name</MudMenuItem>
-		}
-		
-    </TaskContextMenu>
+    <!-- Settings Panel (Collapsible) -->
+    <MudCollapse Expanded="@_showSettings">
+        <MudPaper Class="pa-4 mb-4" Elevation="1">
+            <MudGrid>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Palette" Size="Size.Small" Class="mr-1" />
+                        Color Theme
+                    </MudText>
+                    <MudRadioGroup @bind-Value="@_color" T="Color">
+                        <MudStack Spacing="1">
+                            <MudRadio Value="Color.Primary" Color="Color.Primary" Dense>Primary</MudRadio>
+                            <MudRadio Value="Color.Secondary" Color="Color.Secondary" Dense>Secondary</MudRadio>
+                            <MudRadio Value="Color.Tertiary" Color="Color.Tertiary" Dense>Tertiary</MudRadio>
+                            <MudRadio Value="Color.Success" Color="Color.Success" Dense>Success</MudRadio>
+                        </MudStack>
+                    </MudRadioGroup>
+                </MudItem>
 
-</MudGanttChart>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Style" Size="Size.Small" Class="mr-1" />
+                        Variant
+                    </MudText>
+                    <MudRadioGroup @bind-Value="@_variant" T="Variant">
+                        <MudRadio Value="Variant.Outlined" Dense>Outlined</MudRadio>
+                        <MudRadio Value="Variant.Filled" Dense>Filled</MudRadio>
+                    </MudRadioGroup>
+                </MudItem>
 
-<MudStack Row>
-    <MudPaper Class="pa-5">
-        <MudRadioGroup @bind-Value="@_color">
-            <MudStack Spacing="1">
-                <MudRadio Value="Color.Primary">Primary</MudRadio>
-                <MudRadio Value="Color.Secondary">Secondary</MudRadio>
-                <MudRadio Value="Color.Tertiary">Tertiary</MudRadio>
-                <MudRadio Value="Color.Success">Success</MudRadio>
-                <MudRadio Value="Color.Default">Default</MudRadio>
-                <MudRadio Value="Color.Surface">Surface</MudRadio>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.FormatSize" Size="Size.Small" Class="mr-1" />
+                        Size
+                    </MudText>
+                    <MudRadioGroup @bind-Value="@_size" T="Size">
+                        <MudStack Spacing="1">
+                            <MudRadio Value="Size.Small" Dense>Small</MudRadio>
+                            <MudRadio Value="Size.Medium" Dense>Medium</MudRadio>
+                            <MudRadio Value="Size.Large" Dense>Large</MudRadio>
+                        </MudStack>
+                    </MudRadioGroup>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Tune" Size="Size.Small" Class="mr-1" />
+                        Options
+                    </MudText>
+                    <MudStack Spacing="1">
+                        <MudCheckBox @bind-Value="@_readOnly" Dense Color="Color.Primary">Read-Only</MudCheckBox>
+                        <MudCheckBox @bind-Value="@_dense" Dense Color="Color.Primary">Dense Layout</MudCheckBox>
+                        <MudCheckBox @bind-Value="@_darkMode" Dense Color="Color.Primary">Dark Mode</MudCheckBox>
+                        <MudDivider Class="my-2" />
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="AssignColors" FullWidth>Random Colors</MudButton>
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="ClearColors" FullWidth>Clear Colors</MudButton>
+                    </MudStack>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudCollapse>
+
+    <!-- Main Split View: Task List + Gantt Chart -->
+    <MudPaper Elevation="3" Style="height: 600px; overflow: hidden;">
+        <MudStack Row Style="height: 100%;">
+            
+            <!-- Task List Panel -->
+            <MudPaper Elevation="0" Class="task-list-panel" Style="width: 55%; overflow-y: auto; overflow-x: hidden; border-right: 2px solid var(--mud-palette-divider);">
+                
+                <!-- Task List Header -->
+                <MudPaper Elevation="1" Class="pa-3" Style="position: sticky; top: 0; z-index: 10; background: var(--mud-palette-surface);">
+                    <MudGrid Spacing="1">
+                        <MudItem xs="1">
+                            <MudText Typo="Typo.subtitle2" Align="Align.Center"><strong>#</strong></MudText>
+                        </MudItem>
+                        <MudItem xs="4">
+                            <MudText Typo="Typo.subtitle2"><strong>Task Name</strong></MudText>
+                        </MudItem>
+                        <MudItem xs="2">
+                            <MudText Typo="Typo.subtitle2"><strong>Start</strong></MudText>
+                        </MudItem>
+                        <MudItem xs="2">
+                            <MudText Typo="Typo.subtitle2"><strong>End</strong></MudText>
+                        </MudItem>
+                        <MudItem xs="1">
+                            <MudText Typo="Typo.subtitle2" Align="Align.Center"><strong>Days</strong></MudText>
+                        </MudItem>
+                        <MudItem xs="2">
+                            <MudText Typo="Typo.subtitle2" Align="Align.Center"><strong>Progress</strong></MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+
+                <!-- Task List Rows -->
+                @foreach (var taskWithIndex in _tasks.Select((t, i) => new { Task = t, Index = i }))
+                {
+                    var isSelected = _selectedTask?.Id == taskWithIndex.Task.Id;
+                    var rowClass = isSelected ? "pa-3 task-row task-selected" : "pa-3 task-row";
+                    <MudPaper Elevation="0" 
+                              Class="@rowClass" 
+                              Style="cursor: pointer; border-bottom: 1px solid var(--mud-palette-divider-light); transition: all 0.2s;"
+                              @onclick="() => SelectTask(taskWithIndex.Task)"
+                              @ondblclick="() => EditTaskDialog(taskWithIndex.Task)">
+                        <MudGrid Spacing="1">
+                            <MudItem xs="1">
+                                <MudText Typo="Typo.body2" Align="Align.Center" Style="font-weight: 500;">
+                                    @(taskWithIndex.Index + 1)
+                                </MudText>
+                            </MudItem>
+                            <MudItem xs="4">
+                                <MudStack Row Spacing="1" AlignItems="AlignItems.Center">
+                                    @if (!string.IsNullOrEmpty(taskWithIndex.Task.Color))
+                                    {
+                                        <MudIcon Icon="@Icons.Material.Filled.Circle" 
+                                                 Size="Size.Small" 
+                                                 Style="@($"color: {taskWithIndex.Task.Color};")" />
+                                    }
+                                    <MudText Typo="Typo.body2" Style="flex: 1;">
+                                        @taskWithIndex.Task.Name
+                                    </MudText>
+                                </MudStack>
+                            </MudItem>
+                            <MudItem xs="2">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @(taskWithIndex.Task.StartDate?.ToString("MM/dd/yy") ?? "-")
+                                </MudText>
+                            </MudItem>
+                            <MudItem xs="2">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @(taskWithIndex.Task.EndDate?.ToString("MM/dd/yy") ?? "-")
+                                </MudText>
+                            </MudItem>
+                            <MudItem xs="1">
+                                <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Info">
+                                    @GetDuration(taskWithIndex.Task)
+                                </MudText>
+                            </MudItem>
+                            <MudItem xs="2">
+                                <MudStack Spacing="0" AlignItems="AlignItems.Center">
+                                    <MudProgressLinear Color="@GetProgressColor(taskWithIndex.Task)" 
+                                                       Value="@((taskWithIndex.Task.Progress ?? 0) * 100)" 
+                                                       Size="Size.Small" 
+                                                       Style="width: 100%;" />
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @((taskWithIndex.Task.Progress ?? 0).ToString("P0"))
+                                    </MudText>
+                                </MudStack>
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                }
+
+                @if (_tasks.Count == 0)
+                {
+                    <MudPaper Elevation="0" Class="pa-8 text-center">
+                        <MudIcon Icon="@Icons.Material.Filled.InsertDriveFile" Size="Size.Large" Color="Color.Secondary" />
+                        <MudText Typo="Typo.h6" Color="Color.Secondary">No tasks available</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Click "Add Task" to create a new task</MudText>
+                    </MudPaper>
+                }
+
+            </MudPaper>
+
+            <!-- Gantt Chart Panel -->
+            <MudPaper Elevation="0" Class="flex-grow-1" Style="overflow: auto;">
+                <MudGanttChart @ref="_mudGanttChart"
+                               TaskClicked="OnTaskClicked"
+                               @bind-Tasks="@_tasks" 
+                               Events="@_events" 
+                               Color="@_color" 
+                               Variant="@_variant" 
+                               ReadOnly="@_readOnly" 
+                               Dense="@_dense" 
+                               Size="@_size"
+                               TaskDatesChanged="OnTaskDatesChanged"
+                               TaskProgressChanged="OnTaskProgressChanged">
+
+                    <TaskContextMenu>
+                        <MudMenuItem Icon="@Icons.Material.Filled.ZoomIn" OnClick="ZoomIn">Zoom in</MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.ZoomOut" OnClick="ZoomOut">Zoom out</MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.FitScreen" OnClick="ResetZoom">Reset zoom</MudMenuItem>
+                        <MudDivider />
+                        @if(context is not null)
+                        {
+                            <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="() => EditTaskDialog(context)">Edit Task</MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.ColorLens" OnClick="() => MakeTaskBlue(context)">Make it blue</MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.ContentCopy" OnClick="() => DuplicateTask(context)">Duplicate Task</MudMenuItem>
+                            <MudDivider />
+                            <MudMenuItem Icon="@Icons.Material.Outlined.Delete" IconColor="Color.Error" OnClick="() => DeleteTask(context)">Delete @context.Name</MudMenuItem>
+                        }
+                    </TaskContextMenu>
+
+                </MudGanttChart>
+            </MudPaper>
+
+        </MudStack>
+    </MudPaper>
+
+    <!-- Task Details Card (shown when task is selected) -->
+    @if (_selectedTask != null)
+    {
+        <MudPaper Class="pa-4 mt-4" Elevation="2">
+            <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">
+                    <MudIcon Icon="@Icons.Material.Filled.Info" Class="mr-2" />
+                    Task Details
+                </MudText>
+                <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                               Size="Size.Small" 
+                               OnClick="() => _selectedTask = null" />
             </MudStack>
-        </MudRadioGroup>
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_selectedTask.Name" 
+                                  Label="Task Name" 
+                                  Variant="Variant.Outlined"
+                                  ReadOnly="@_readOnly"
+                                  Immediate="true" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTextField Value="@FormatStartDate(_selectedTask)" 
+                                  Label="Start Date" 
+                                  Variant="Variant.Outlined"
+                                  ReadOnly="true" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTextField Value="@FormatEndDate(_selectedTask)" 
+                                  Label="End Date" 
+                                  Variant="Variant.Outlined"
+                                  ReadOnly="true" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">Progress: @FormatProgress(_selectedTask)</MudText>
+                    <MudProgressLinear Color="@GetProgressColor(_selectedTask)" Value="@((_selectedTask.Progress ?? 0) * 100)" Size="Size.Medium" Class="mb-2" />
+                    <MudText Typo="Typo.body2">@FormatProgress(_selectedTask)</MudText>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTextField Value="@GetDuration(_selectedTask)" 
+                                  Label="Duration (Days)" 
+                                  Variant="Variant.Outlined"
+                                  ReadOnly="true"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@Icons.Material.Filled.CalendarToday" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudColorPicker @bind-Text="_selectedTask.Color" 
+                                    Label="Task Color" 
+                                    Variant="Variant.Outlined"
+                                    DisableToolbar="false"
+                                    Disabled="@_readOnly"
+                                    Placeholder="Default color" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Link" Size="Size.Small" Class="mr-1" />
+                        Dependencies: @(_selectedTask.Links?.Length ?? 0) links
+                    </MudText>
+                    @if (_selectedTask.Links?.Length > 0)
+                    {
+                        <MudStack Row Spacing="1" Wrap="Wrap.Wrap">
+                            @foreach (var link in _selectedTask.Links)
+                            {
+                                var linkedTask = _tasks.FirstOrDefault(t => t.Id == link.Id);
+                                <MudPaper Class="pa-2" Elevation="1">
+                                    <MudText Typo="Typo.body2" Color="Color.Info">
+                                        <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" />
+                                        @linkedTask?.Name ? @link.LinkType
+                                    </MudText>
+                                </MudPaper>
+                            }
+                        </MudStack>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">No dependencies</MudText>
+                    }
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+
+    <!-- Statistics Panel -->
+    <MudPaper Class="pa-4 mt-4" Elevation="1">
+        <MudText Typo="Typo.h6" Class="mb-3">
+            <MudIcon Icon="@Icons.Material.Filled.Analytics" Class="mr-2" />
+            Project Statistics
+        </MudText>
+        <MudGrid>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-3" Elevation="0" Style="border-left: 4px solid var(--mud-palette-primary);">
+                    <MudText Typo="Typo.h4" Color="Color.Primary">@_tasks.Count</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Total Tasks</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-3" Elevation="0" Style="border-left: 4px solid var(--mud-palette-success);">
+                    <MudText Typo="Typo.h4" Color="Color.Success">@_tasks.Count(t => (t.Progress ?? 0) >= 1.0)</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Completed Tasks</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-3" Elevation="0" Style="border-left: 4px solid var(--mud-palette-info);">
+                    <MudText Typo="Typo.h4" Color="Color.Info">@_tasks.Count(t => (t.Progress ?? 0) > 0 && (t.Progress ?? 0) < 1.0)</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">In Progress</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-3" Elevation="0" Style="border-left: 4px solid var(--mud-palette-warning);">
+                    <MudText Typo="Typo.h4" Color="Color.Warning">@GetOverallProgress()</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Overall Progress</MudText>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
     </MudPaper>
 
-    <MudPaper Class="pa-5">
-        <MudRadioGroup @bind-Value="@_variant">
-            <MudRadio Value="Variant.Outlined">Outlined</MudRadio>
-            <MudRadio Value="Variant.Filled">Filled</MudRadio>
-        </MudRadioGroup>
-    </MudPaper>
+</MudContainer>
 
-    <MudPaper Class="pa-5">
-        <MudCheckBox @bind-Value="@_readOnly">Read-Only</MudCheckBox>
-        <MudCheckBox @bind-Value="@_dense">Dense</MudCheckBox>
+<style>
+    .task-row:hover {
+        background-color: var(--mud-palette-action-hover) !important;
+    }
+    
+    .task-selected {
+        background-color: var(--mud-palette-primary-lighten) !important;
+        border-left: 4px solid var(--mud-palette-primary) !important;
+    }
 
-        <MudRadioGroup @bind-Value="@_size">
-            <MudStack Spacing="1">
-                <MudRadio Value="Size.Small">Small</MudRadio>
-                <MudRadio Value="Size.Medium">Medium</MudRadio>
-                <MudRadio Value="Size.Large">Large</MudRadio>
-            </MudStack>
-        </MudRadioGroup>
+    .task-list-panel::-webkit-scrollbar {
+        width: 8px;
+    }
 
+    .task-list-panel::-webkit-scrollbar-track {
+        background: var(--mud-palette-background-grey);
+    }
 
-    </MudPaper>
+    .task-list-panel::-webkit-scrollbar-thumb {
+        background: var(--mud-palette-divider);
+        border-radius: 4px;
+    }
 
-    <MudPaper Class="pa-5">
-        <MudCheckBox @bind-Value="@_darkMode">Dark mode</MudCheckBox>
-
-        <MudButton OnClick="AssignColors">Assign task colors</MudButton>
-        <MudButton OnClick="ClearColors">Clear task colors</MudButton>
-    </MudPaper>
-</MudStack>
+    .task-list-panel::-webkit-scrollbar-thumb:hover {
+        background: var(--mud-palette-text-secondary);
+    }
+</style>
 
 @code {
-	private Color _color = Color.Primary;
-	private Variant _variant = Variant.Filled;
-	private Size _size = Size.Medium;
-	private bool _readOnly = false;
-	private bool _darkMode = true;
-	private bool _dense = false;
-	private MudGanttChart _mudGanttChart = default!;
+    private Color _color = Color.Primary;
+    private Variant _variant = Variant.Filled;
+    private Size _size = Size.Medium;
+    private bool _readOnly = false;
+    private bool _darkMode = true;
+    private bool _dense = false;
+    private bool _showSettings = false;
+    private MudGanttChart _mudGanttChart = default!;
+    private MudGanttTask? _selectedTask;
 
-	private void MakeTaskBlue(MudGanttTask task)
-	{
-		task.Color = "#1176D3"; // Blue color"
-	}
+    private void MakeTaskBlue(MudGanttTask task)
+    {
+        task.Color = "#1176D3";
+        snackbar.Add($"'{task.Name}' is now blue!", Severity.Info);
+    }
 
-	private async Task ZoomIn()
-	{
-		await _mudGanttChart.ZoomInAsync();
-	}
-	private async Task ZoomOut()
-	{
-		await _mudGanttChart.ZoomOutAsync();
-	}
+    private async Task ZoomIn()
+    {
+        await _mudGanttChart.ZoomInAsync();
+    }
+
+    private async Task ZoomOut()
+    {
+        await _mudGanttChart.ZoomOutAsync();
+    }
+
+    private async Task ResetZoom()
+    {
+        await _mudGanttChart.ResetZoomAsync();
+    }
 
     private void DeleteTask(MudGanttTask task)
     {
-        snackbar.Add("Delete " + task.Name);
         _tasks = _tasks.Where(x => x.Id != task.Id).ToList();
+        if (_selectedTask?.Id == task.Id)
+        {
+            _selectedTask = null;
+        }
+        snackbar.Add($"Deleted '{task.Name}'", Severity.Warning);
+    }
+
+    private void DeleteSelectedTask()
+    {
+        if (_selectedTask != null)
+        {
+            DeleteTask(_selectedTask);
+        }
+    }
+
+    private void AddNewTask()
+    {
+        var newTask = new MudGanttTask
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = $"New Task {_tasks.Count + 1}",
+            StartDate = DateTimeOffset.Now,
+            EndDate = DateTimeOffset.Now.AddDays(3),
+            Progress = 0.0
+        };
+        _tasks = _tasks.Append(newTask).ToList();
+        _selectedTask = newTask;
+        snackbar.Add($"Added '{newTask.Name}'", Severity.Success);
+    }
+
+    private void SelectTask(MudGanttTask task)
+    {
+        _selectedTask = task;
     }
 
     private void OnTaskClicked(MudGanttTask task)
     {
-        snackbar.Add(task.Name + " clicked");
+        _selectedTask = task;
+        snackbar.Add($"'{task.Name}' clicked", Severity.Info);
+    }
+
+    private void OnTaskDatesChanged(MudGanttTask task)
+    {
+        snackbar.Add($"'{task.Name}' dates updated", Severity.Info);
+        StateHasChanged();
+    }
+
+    private void OnTaskProgressChanged(MudGanttTask task)
+    {
+        snackbar.Add($"'{task.Name}' progress: {(task.Progress ?? 0):P0}", Severity.Info);
+        StateHasChanged();
+    }
+
+    private void EditTaskDialog(MudGanttTask task)
+    {
+        _selectedTask = task;
+        snackbar.Add($"Editing '{task.Name}' - Use the details panel below", Severity.Info);
+    }
+
+    private void DuplicateTask(MudGanttTask task)
+    {
+        var duplicatedTask = new MudGanttTask
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = $"{task.Name} (Copy)",
+            StartDate = task.StartDate?.AddDays(1),
+            EndDate = task.EndDate?.AddDays(1),
+            Progress = task.Progress,
+            Color = task.Color
+        };
+        _tasks = _tasks.Append(duplicatedTask).ToList();
+        snackbar.Add($"Duplicated '{task.Name}'", Severity.Success);
+    }
+
+    private string GetDuration(MudGanttTask task)
+    {
+        if (task.StartDate.HasValue && task.EndDate.HasValue)
+        {
+            var duration = (task.EndDate.Value - task.StartDate.Value).Days;
+            return duration.ToString();
+        }
+        return "-";
+    }
+
+    private string FormatStartDate(MudGanttTask task)
+    {
+        return task.StartDate?.ToString("MM/dd/yyyy") ?? "";
+    }
+
+    private string FormatEndDate(MudGanttTask task)
+    {
+        return task.EndDate?.ToString("MM/dd/yyyy") ?? "";
+    }
+
+    private string FormatProgress(MudGanttTask task)
+    {
+        return (task.Progress ?? 0).ToString("P0");
+    }
+
+    private Color GetProgressColor(MudGanttTask task)
+    {
+        var progress = task.Progress ?? 0;
+        if (progress >= 1.0) return Color.Success;
+        if (progress >= 0.5) return Color.Info;
+        if (progress > 0) return Color.Warning;
+        return Color.Default;
+    }
+
+    private string GetOverallProgress()
+    {
+        if (_tasks.Count == 0) return "0%";
+        var average = _tasks.Average(t => t.Progress ?? 0) * 100;
+        return $"{average:F1}%";
     }
 
     private IReadOnlyList<MudGanttEvent> _events = [
@@ -121,7 +561,6 @@
             EndDate = new DateTimeOffset(2025,6,26,18,0,0,TimeSpan.Zero),
             Progress = 0.8
         },
-
         new MudGanttTask
         {
             Id = "implementation-js",
@@ -140,7 +579,6 @@
             Progress = 0.95,
             Links = [new Link("implementation-epic", LinkType.StartToStart), new Link("implementation-epic", LinkType.FinishToFinish)],
         },
-
         new MudGanttTask
         {
             Id = "unit-tests",
@@ -159,7 +597,6 @@
             Links = [new Link("implementation-epic", LinkType.FinishToStart)],
             Progress = 0.8
         },
-
         new MudGanttTask
         {
             Id = "bug-fixes",
@@ -170,7 +607,6 @@
             Progress = 0.35,
             Links = [new Link("integration-tests", LinkType.FinishToStart), new Link("unit-tests", LinkType.FinishToStart)]
         },
-
         new MudGanttTask
         {
             Id = "release1",
@@ -188,7 +624,9 @@
         {
             task.Color = null;
         }
+        snackbar.Add("Task colors cleared", Severity.Info);
     }
+
     private void AssignColors()
     {
         string[] palette = ["#5f0f40", "#9a031e", "#fb8b24", "#e36414", "#0f4c5c"];
@@ -197,5 +635,6 @@
         {
             item.Item.Color = palette[(offset+item.Index) % palette.Length];
         }
+        snackbar.Add("Random colors assigned", Severity.Success);
     }
 }
