@@ -60,5 +60,54 @@
                 return null;
             }
         }
+
+        /// <summary>
+        /// Gets or sets estimated hours for the task. Used to compare progress pacing against tracked effort.
+        /// </summary>
+        public double? EstimatedHours { get; set; }
+
+        /// <summary>
+        /// Gets or sets actual tracked hours for the task.
+        /// </summary>
+        public double? ActualHours { get; set; }
+
+        /// <summary>
+        /// Gets ratio of actual-vs-estimated hours for rendering the hourly-progress overlay.
+        /// </summary>
+        public double? ActualProgressRatio
+        {
+            get
+            {
+                if (EstimatedHours is null or <= 0 || ActualHours is null)
+                {
+                    return null;
+                }
+
+                return Math.Max(0, ActualHours.Value / EstimatedHours.Value);
+            }
+        }
+
+        /// <summary>
+        /// Gets color for hourly-progress overlay. Green if within estimate, red if over estimate.
+        /// </summary>
+        public string? ActualProgressColor
+        {
+            get
+            {
+                if (EstimatedHours is null or <= 0 || ActualHours is null)
+                {
+                    return null;
+                }
+
+                return ActualHours <= EstimatedHours
+                    ? "var(--mud-palette-success)"
+                    : "var(--mud-palette-error)";
+            }
+        }
+
+        /// <summary>
+        /// Optional tooltip text shown for the task bar in the chart.
+        /// </summary>
+        public string? Tooltip { get; set; }
     }
 }

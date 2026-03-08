@@ -768,6 +768,29 @@ class GanntChart {
                 this.ganttChart.appendChild(progressElement);
             }
 
+            // Actual vs estimated hour pacing overlay (thin striped line)
+            if (task.data.actualProgressRatio !== undefined && task.data.actualProgressRatio !== null) {
+                const ratio = Math.max(0, task.data.actualProgressRatio);
+                const cappedRatio = Math.min(ratio, 1.25);
+                const overlayWidth = width * cappedRatio;
+
+                const actualLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                actualLine.setAttribute("data-type", "actual-progress-line");
+                actualLine.setAttribute("x1", x);
+                actualLine.setAttribute("y1", y + task.height - 4);
+                actualLine.setAttribute("x2", x + overlayWidth);
+                actualLine.setAttribute("y2", y + task.height - 4);
+                if (task.data.actualProgressColor) {
+                    actualLine.setAttribute("style", `stroke: ${task.data.actualProgressColor}`);
+                }
+                if (task.data.tooltip) {
+                    const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+                    title.textContent = task.data.tooltip;
+                    actualLine.appendChild(title);
+                }
+                this.ganttChart.appendChild(actualLine);
+            }
+
             // Edges to resize the task
             const edgeLeft = document.createElementNS("http://www.w3.org/2000/svg", "rect");
             edgeLeft.setAttribute("data-type", "edge-left");

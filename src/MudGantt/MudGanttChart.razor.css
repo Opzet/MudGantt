@@ -183,6 +183,14 @@
     stroke: var(--clr-today);
 }
 
+.mud-gantt ::deep line[data-type="actual-progress-line"] {
+    stroke: var(--mud-palette-success);
+    stroke-width: 3;
+    stroke-dasharray: 4 3;
+    opacity: 0.95;
+    pointer-events: none;
+}
+
 .mud-gantt ::deep line[data-type="event-line"] {
     stroke: var(--clr-event);
     stroke-dasharray: 5,5;
