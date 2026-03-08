@@ -85,6 +85,10 @@ class GanntChart {
         this.options.grid = 'auto';
         this.options.axisHeight = 50;
         this.options.footerHeight = 50;
+        this.options.minDayPixelWidth = 32;
+        this.options.minHourPixelWidth = 60;
+        this.options.maxGridLines = 600;
+        this.options.minTickLabelSpacingPx = 56;
 
         this.options.showAxis = true;
         this.options.progressHandleSize = 10;
@@ -148,14 +152,62 @@ class GanntChart {
         } 
         this.ganttChart.innerHTML = "";
 
+        const previousScrollLeft = this.container.scrollLeft;
+        const previousScrollTop = this.container.scrollTop;
+
         // Size it
         const parentWidth = this.container.clientWidth;
         const h = this.options.axisHeight + this.data.items.length * (this.options.taskSpacing + this.options.taskHeight) + this.options.footerHeight;
-        this.viewBoxWidth = parentWidth;
+        this.viewBoxWidth = this.#calculateChartWidth(parentWidth);
         this.viewBoxHeight = h;
-        this.ganttChart.setAttribute('width', `${parentWidth}px`);
+        this.ganttChart.setAttribute('width', `${this.viewBoxWidth}px`);
         this.ganttChart.setAttribute('height', `${h}px`);
         this.ganttChart.setAttribute('viewBox', `0 0 ${this.viewBoxWidth} ${this.viewBoxHeight}`);
+
+        this.container.scrollLeft = Math.min(previousScrollLeft, Math.max(this.viewBoxWidth - parentWidth, 0));
+        this.container.scrollTop = previousScrollTop;
+    }
+
+    #calculateChartWidth(parentWidth) {
+        if (!this.range || this.range <= 0) {
+            return parentWidth;
+        }
+
+        const dayEpochs = 24 * 3600 * 1000;
+        const hourEpochs = 60 * 60 * 1000;
+        const rangeInDays = this.range / dayEpochs;
+        const rangeInHours = this.range / hourEpochs;
+
+        const gridStyle = this.#resolveGridStyle();
+
+        let preferredWidth = parentWidth;
+        if (gridStyle === 'hour') {
+            preferredWidth = Math.ceil(rangeInHours * this.options.minHourPixelWidth);
+        } else {
+            preferredWidth = Math.ceil(rangeInDays * this.options.minDayPixelWidth);
+        }
+
+        return Math.max(parentWidth, preferredWidth);
+    }
+
+    #resolveGridStyle() {
+        const configuredGrid = this.options.grid ?? 'auto';
+        if (configuredGrid !== 'auto') {
+            return configuredGrid;
+        }
+
+        const oneHour = 60 * 60 * 1000;
+        const diffHours = Math.abs((this.maxDate - this.minDate) / oneHour);
+
+        if (diffHours <= 48) {
+            return 'hour';
+        }
+
+        if (diffHours > 20 * 24) {
+            return 'week';
+        }
+
+        return 'day';
     }
 
     #onMouseWheel(event) {
@@ -232,7 +284,7 @@ class GanntChart {
             this.range = this.maxEpochs - this.minEpochs;
 
             const dayEpochs = 24 * 3600 * 1000;
-            this.dayInPixels = dayEpochs / this.range * this.viewBoxWidth;
+            this.dayInPixels = this.viewBoxWidth > 0 ? dayEpochs / this.range * this.viewBoxWidth : 0;
     	}
     }
 
@@ -409,22 +461,7 @@ class GanntChart {
         axisBack.setAttribute('height', this.options.axisHeight);
         this.ganttChart.appendChild(axisBack);
 
-        let gridStyle = this.options.grid ?? 'day';
-        if (gridStyle == 'auto') {
-            const oneHour = 60 * 60 * 1000;
-            const diffHours = Math.abs((this.maxDate - this.minDate) / oneHour);
-            if (diffHours <= 48) {
-                gridStyle = 'hour';
-            } else {
-                gridStyle = 'day';
-            }
-
-            if (diffHours > 20 * 24) {
-                gridStyle = 'week';
-            }
-        }
-
-        this.options.grid = gridStyle;
+        const gridStyle = this.#resolveGridStyle();
 
         this.#addAxisDateLabel(state, 0, this.minDate, 'start', gridStyle);
         this.#addGridLine(0);
@@ -437,6 +474,18 @@ class GanntChart {
             stepMs = 60 * 60 * 1000;
         } else if (gridStyle == 'week') {
             stepMs = 7 * 24 * 60 * 60 * 1000;
+        }
+
+        const minTickSpacingPx = this.options.minTickLabelSpacingPx;
+        const stepPixels = (stepMs * this.viewBoxWidth) / this.range;
+        if (stepPixels > 0 && stepPixels < minTickSpacingPx) {
+            const multiplier = Math.ceil(minTickSpacingPx / stepPixels);
+            stepMs *= multiplier;
+        }
+
+        const maxStepMs = Math.ceil(this.range / this.options.maxGridLines);
+        if (maxStepMs > stepMs) {
+            stepMs = maxStepMs;
         }
 
         let date = new Date(this.minDate);
@@ -482,25 +531,29 @@ class GanntChart {
                 const hourChanged = state.hour != axisDate.getHours();
 
                 if (yearChanged || monthChanged || dateChanged) {
-                    const dayTextElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                    dayTextElement.setAttribute('data-type', "axis-date");
-                    dayTextElement.setAttribute('data-subtype', "day");
-                    dayTextElement.setAttribute('x', x);
-                    dayTextElement.setAttribute('y', this.options.axisPadding + h / 3);
-                    dayTextElement.setAttribute('text-anchor', textAnchor);
-                    dayTextElement.innerHTML = displayDate.format("MMM DD");
-                    this.ganttChart.appendChild(dayTextElement);
+                    if (this.#canRenderAxisLabel(state, "hour-day", x, 84)) {
+                        const dayTextElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        dayTextElement.setAttribute('data-type', "axis-date");
+                        dayTextElement.setAttribute('data-subtype', "day");
+                        dayTextElement.setAttribute('x', x);
+                        dayTextElement.setAttribute('y', this.options.axisPadding + h / 3);
+                        dayTextElement.setAttribute('text-anchor', textAnchor);
+                        dayTextElement.innerHTML = displayDate.format("MMM DD");
+                        this.ganttChart.appendChild(dayTextElement);
+                    }
                 }
 
                 if (hourChanged) {
-                    const hourTextElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                    hourTextElement.setAttribute('data-type', "axis-date");
-                    hourTextElement.setAttribute('data-subtype', "hour");
-                    hourTextElement.setAttribute('x', x);
-                    hourTextElement.setAttribute('y', this.options.axisPadding + h * 2 / 3);
-                    hourTextElement.setAttribute('text-anchor', textAnchor);
-                    hourTextElement.innerHTML = displayDate.format("HH:mm");
-                    this.ganttChart.appendChild(hourTextElement);
+                    if (this.#canRenderAxisLabel(state, "hour", x, this.options.minTickLabelSpacingPx)) {
+                        const hourTextElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        hourTextElement.setAttribute('data-type', "axis-date");
+                        hourTextElement.setAttribute('data-subtype', "hour");
+                        hourTextElement.setAttribute('x', x);
+                        hourTextElement.setAttribute('y', this.options.axisPadding + h * 2 / 3);
+                        hourTextElement.setAttribute('text-anchor', textAnchor);
+                        hourTextElement.innerHTML = displayDate.format("HH:mm");
+                        this.ganttChart.appendChild(hourTextElement);
+                    }
                 }
 
                 state.year = axisDate.getFullYear();
@@ -511,41 +564,44 @@ class GanntChart {
             }
 
             if (yearChanged) {
-
-                const dateTextElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                dateTextElement.setAttribute('data-type', "axis-date");
-                dateTextElement.setAttribute('data-subtype', "year");
-                dateTextElement.setAttribute('x', x);
-                dateTextElement.setAttribute('y', this.options.axisPadding);
-                dateTextElement.setAttribute('text-anchor', textAnchor);
-                dateTextElement.innerHTML = displayDate.format("YYYY");
-                this.ganttChart.appendChild(dateTextElement);
+                if (this.#canRenderAxisLabel(state, "year", x, 90)) {
+                    const dateTextElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    dateTextElement.setAttribute('data-type', "axis-date");
+                    dateTextElement.setAttribute('data-subtype', "year");
+                    dateTextElement.setAttribute('x', x);
+                    dateTextElement.setAttribute('y', this.options.axisPadding);
+                    dateTextElement.setAttribute('text-anchor', textAnchor);
+                    dateTextElement.innerHTML = displayDate.format("YYYY");
+                    this.ganttChart.appendChild(dateTextElement);
+                }
             }
 
             if (monthChanged) {
-
-                const dateTextElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                dateTextElement.setAttribute('data-type', "axis-date");
-                dateTextElement.setAttribute('data-subtype', "month");
-                dateTextElement.setAttribute('x', x);
-                dateTextElement.setAttribute('y', this.options.axisPadding + h/3);
-                dateTextElement.setAttribute('text-anchor', textAnchor);
-                dateTextElement.innerHTML = displayDate.format("MMM");
-                this.ganttChart.appendChild(dateTextElement);
+                if (this.#canRenderAxisLabel(state, "month", x, 68)) {
+                    const dateTextElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    dateTextElement.setAttribute('data-type', "axis-date");
+                    dateTextElement.setAttribute('data-subtype', "month");
+                    dateTextElement.setAttribute('x', x);
+                    dateTextElement.setAttribute('y', this.options.axisPadding + h/3);
+                    dateTextElement.setAttribute('text-anchor', textAnchor);
+                    dateTextElement.innerHTML = displayDate.format("MMM");
+                    this.ganttChart.appendChild(dateTextElement);
+                }
             }
 
 
             if (dateChanged) {
-
-                const dateTextElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                dateTextElement.setAttribute('data-type', "axis-date");
-                dateTextElement.setAttribute('data-subtype', "day");
-                dateTextElement.setAttribute('data-day-of-week', m.format("E"));
-                dateTextElement.setAttribute('x', x);
-                dateTextElement.setAttribute('y', this.options.axisPadding + h * 2 / 3);
-                dateTextElement.setAttribute('text-anchor', textAnchor);
-                dateTextElement.innerHTML = displayDate.format("DD");
-                this.ganttChart.appendChild(dateTextElement);
+                if (this.#canRenderAxisLabel(state, "day", x, this.options.minTickLabelSpacingPx)) {
+                    const dateTextElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    dateTextElement.setAttribute('data-type', "axis-date");
+                    dateTextElement.setAttribute('data-subtype', "day");
+                    dateTextElement.setAttribute('data-day-of-week', m.format("E"));
+                    dateTextElement.setAttribute('x', x);
+                    dateTextElement.setAttribute('y', this.options.axisPadding + h * 2 / 3);
+                    dateTextElement.setAttribute('text-anchor', textAnchor);
+                    dateTextElement.innerHTML = displayDate.format("DD");
+                    this.ganttChart.appendChild(dateTextElement);
+                }
             }
 
             // Keep track of the date so we know which elements we need to add
@@ -554,6 +610,17 @@ class GanntChart {
             state.date = axisDate.getDate();
 
         }
+    }
+
+    #canRenderAxisLabel(state, key, x, minDistance) {
+        state.lastLabelX ??= {};
+        const lastX = state.lastLabelX[key];
+        if (lastX !== undefined && Math.abs(x - lastX) < minDistance) {
+            return false;
+        }
+
+        state.lastLabelX[key] = x;
+        return true;
     }
 
     #addGridLine(x, dataType) {

@@ -3,7 +3,7 @@
     height: 100%;
     min-height: 100px;
     position: relative;
-    overflow: hidden;
+    overflow: auto;
 
     --clr-normal: var(--mud-palette-surface);
     --clr-darken: var(--mud-palette-surface-darken);
@@ -16,7 +16,10 @@
     background: var(--mud-palette-background);
 
     touch-action: none;
-    overflow: hidden;
+}
+
+.mud-gantt ::deep svg {
+    display: block;
 }
 
 .mud-gantt.mud-color-primary {
@@ -191,6 +194,9 @@
 
 .mud-gannt-container {
     position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
 }
 
 [popover]:popover-open {

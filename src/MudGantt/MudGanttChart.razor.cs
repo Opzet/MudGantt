@@ -89,8 +89,8 @@ namespace MudGantt
         [Parameter] public RenderFragment<MudGanttTask?>? TaskContextMenu { get; set; }
 
         public string CssClass => new CssBuilder("mud-gantt")
-            .AddClass("mud-color-" + Color.ToDescriptionString().ToLowerInvariant(), true)
-            .AddClass("mud-variant-" + this.Variant.ToDescriptionString().ToLowerInvariant(), true)
+            .AddClass("mud-color-" + Color.ToString().ToLowerInvariant(), true)
+            .AddClass("mud-variant-" + Variant.ToString().ToLowerInvariant(), true)
             .AddClass("mud-size-small", Size == Size.Small)
             .AddClass("mud-size-medium", Size == Size.Medium)
             .AddClass("mud-size-large", Size == Size.Large)
