@@ -49,6 +49,11 @@ namespace MudGantt
         [Parameter] public IReadOnlyList<MudGanttEvent>? Events { get; set; }
 
         /// <summary>
+        /// Optional range overlays rendered on task rows or the chart body.
+        /// </summary>
+        [Parameter] public IReadOnlyList<MudGanttRangeOverlay>? RangeOverlays { get; set; }
+
+        /// <summary>
         /// List of tasks
         /// </summary>
         [Parameter] public IReadOnlyList<MudGanttTask>? Tasks { get; set; }
@@ -87,6 +92,31 @@ namespace MudGantt
         /// Popover content shown when the user right-clicks on a task.
         /// </summary>
         [Parameter] public RenderFragment<MudGanttTask?>? TaskContextMenu { get; set; }
+
+        /// <summary>
+        /// Optional selected task id used for chart-side highlighting.
+        /// </summary>
+        [Parameter] public string? SelectedTaskId { get; set; }
+
+        /// <summary>
+        /// Scroll the selected task into view when selection changes.
+        /// </summary>
+        [Parameter] public bool ScrollSelectedIntoView { get; set; } = true;
+
+        /// <summary>
+        /// Raised when the selected task id changes through chart interaction.
+        /// </summary>
+        [Parameter] public EventCallback<string?> SelectedTaskIdChanged { get; set; }
+
+        /// <summary>
+        /// Additional task ids to highlight along with the selected task.
+        /// </summary>
+        [Parameter] public IReadOnlyList<string>? HighlightedTaskIds { get; set; }
+
+        /// <summary>
+        /// Dim tasks that are outside the active highlighted set.
+        /// </summary>
+        [Parameter] public bool DimNonHighlighted { get; set; }
 
         public string CssClass => new CssBuilder("mud-gantt")
             .AddClass("mud-color-" + Color.ToString().ToLowerInvariant(), true)
@@ -189,7 +219,19 @@ namespace MudGantt
 
         private GanttData CreateData()
         {
-            return new GanttData { Items = Tasks ?? [], Events = Events ?? [], ReadOnly = ReadOnly, Dense = Dense, Size = Size };
+            return new GanttData
+            {
+                Items = Tasks ?? [],
+                Events = Events ?? [],
+                RangeOverlays = RangeOverlays ?? [],
+                ReadOnly = ReadOnly,
+                Dense = Dense,
+                Size = Size,
+                SelectedTaskId = SelectedTaskId,
+                ScrollSelectedIntoView = ScrollSelectedIntoView,
+                HighlightedTaskIds = HighlightedTaskIds,
+                DimNonHighlighted = DimNonHighlighted
+            };
         }
 
         public async ValueTask DisposeAsync()
@@ -245,6 +287,7 @@ namespace MudGantt
             var task = Tasks.Where(x => x.Id == id).FirstOrDefault();
             if (task is not null)
             {
+                await SelectedTaskIdChanged.InvokeAsync(task.Id);
                 await TaskClicked.InvokeAsync(task);
             }
         }

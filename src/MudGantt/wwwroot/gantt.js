@@ -7,7 +7,7 @@ class GanttTask {
         this.startDate = null;
         this.endDate = null;
         this.zoom = data.zoom ?? 1.0;
-        if (parseFloat(this.zoom) === NaN) {
+        if (Number.isNaN(parseFloat(this.zoom))) {
             this.zoom = 1.0;
         }
 
@@ -23,6 +23,11 @@ class GanttTask {
         this.endDate ??= this.startDate;
         this.startEpochs ??= this.endEpochs;
         this.endEpochs ??= this.startEpochs;
+
+        this.baselineStartDate = data.baselineStartDate ? new Date(data.baselineStartDate) : null;
+        this.baselineEndDate = data.baselineEndDate ? new Date(data.baselineEndDate) : null;
+        this.baselineStartEpochs = this.baselineStartDate ? this.baselineStartDate.getTime() : null;
+        this.baselineEndEpochs = this.baselineEndDate ? this.baselineEndDate.getTime() : null;
 
 	    if(!this.startEpochs) {
 		    throw new Error("No date set for task");
@@ -99,6 +104,7 @@ class GanntChart {
         this.options.edgeSize = 5;
         this.options.textOffsetX = 6;
         this.options.textOffsetY = 4;
+        this.previousSelectedTaskId = null;
 
         this.tasks = [];
     }
@@ -412,12 +418,16 @@ class GanntChart {
         }
         pathLine.setAttribute("data-link-id", `${task1.id}-${task2.id}`);
         pathLine.setAttribute("data-link-type", linkType);
+        pathLine.setAttribute("data-source-id", task1.id);
+        pathLine.setAttribute("data-target-id", task2.id);
         pathLine.setAttribute("d", d);
 
         // Arrow
         const pathArrow = document.createElementNS("http://www.w3.org/2000/svg", "path");
         pathArrow.setAttribute("data-type", "link-arrow");
         pathArrow.setAttribute("data-link-id", `${task1.id}-${task2.id}`);
+        pathArrow.setAttribute("data-source-id", task1.id);
+        pathArrow.setAttribute("data-target-id", task2.id);
         if (linkType == LinkType.FinishToStart || linkType == LinkType.StartToStart) {
             pathArrow.setAttribute("d", this.#createLinkArrowStart(task1));
         } else {
@@ -433,6 +443,7 @@ class GanntChart {
     #updateLinks() {
         this.#removeLinks();
         this.#createLinks();
+        this.#applySelection(false);
     }
 
     #removeLinks() {
@@ -639,6 +650,32 @@ class GanntChart {
         this.#addGridLine(x, "today-line");
     }
 
+    #addNonWorkingBands() {
+        const date = new Date(this.minDate);
+        date.setUTCHours(0, 0, 0, 0);
+
+        while (date < this.maxDate) {
+            const dayOfWeek = date.getUTCDay();
+            if (dayOfWeek === 0 || dayOfWeek === 6) {
+                const nextDate = new Date(date);
+                nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+
+                const startX = (date.getTime() - this.minEpochs) * this.viewBoxWidth / this.range;
+                const endX = (nextDate.getTime() - this.minEpochs) * this.viewBoxWidth / this.range;
+
+                const band = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                band.setAttribute("data-type", "non-working-band");
+                band.setAttribute("x", startX);
+                band.setAttribute("y", this.options.axisHeight);
+                band.setAttribute("width", Math.max(0, endX - startX));
+                band.setAttribute("height", this.viewBoxHeight - this.options.axisHeight - this.options.footerHeight);
+                this.ganttChart.appendChild(band);
+            }
+
+            date.setUTCDate(date.getUTCDate() + 1);
+        }
+    }
+
     #addEvents() {
         for (const evt of this.data.events) {
             const evtEpochs = new Date(evt.date).getTime();
@@ -646,12 +683,32 @@ class GanntChart {
             const x = relativeEpochs * this.viewBoxWidth / this.range;
             const y = this.viewBoxHeight - this.options.footerHeight;
 
+            if (evt.endDate) {
+                const evtEndEpochs = new Date(evt.endDate).getTime();
+                const endRelativeEpochs = (evtEndEpochs - this.minEpochs);
+                const endX = endRelativeEpochs * this.viewBoxWidth / this.range;
+
+                const overlay = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                overlay.setAttribute("data-type", "event-range");
+                overlay.setAttribute("x", x);
+                overlay.setAttribute("y", this.options.axisHeight);
+                overlay.setAttribute("width", Math.max(0, endX - x));
+                overlay.setAttribute("height", this.viewBoxHeight - this.options.axisHeight - this.options.footerHeight);
+                if (evt.color) {
+                    overlay.setAttribute("style", `fill: ${evt.color}; opacity: 0.12; stroke: ${evt.color}`);
+                }
+                this.ganttChart.appendChild(overlay);
+            }
+
             const textElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
             textElement.setAttribute('data-type', "event");
             textElement.setAttribute('x', x);
             textElement.setAttribute('y', y);
             textElement.setAttribute('text-anchor', 'middle');
             textElement.innerHTML = evt.name;
+            if (evt.color) {
+                textElement.setAttribute("style", `fill: ${evt.color}`);
+            }
             this.ganttChart.appendChild(textElement);
 
             this.#addGridLine(x, "event-line");
@@ -665,8 +722,116 @@ class GanntChart {
             d += `L${x + diamondSize / 2} ${y - diamondSize / 2} `;
             shape.setAttribute('d', d);
             shape.setAttribute('data-type', "event-shape");
+            if (evt.color) {
+                shape.setAttribute("style", `fill: ${evt.color}`);
+            }
             this.ganttChart.appendChild(shape);
         }
+    }
+
+    #addRangeOverlays() {
+        if (!this.data.rangeOverlays || this.data.rangeOverlays.length === 0) {
+            return;
+        }
+
+        for (const overlay of this.data.rangeOverlays) {
+            const startEpochs = new Date(overlay.startDate).getTime();
+            const endEpochs = new Date(overlay.endDate).getTime();
+            const x = (startEpochs - this.minEpochs) * this.viewBoxWidth / this.range;
+            const endX = (endEpochs - this.minEpochs) * this.viewBoxWidth / this.range;
+
+            let y = this.options.axisHeight;
+            let height = this.viewBoxHeight - this.options.axisHeight - this.options.footerHeight;
+
+            if (overlay.taskId) {
+                const task = this.tasks.find(task => task.id === overlay.taskId);
+                if (!task) {
+                    continue;
+                }
+
+                y = task.top;
+                height = task.height;
+            }
+
+            const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            rect.setAttribute("data-type", "range-overlay");
+            rect.setAttribute("x", x);
+            rect.setAttribute("y", y);
+            rect.setAttribute("width", Math.max(0, endX - x));
+            rect.setAttribute("height", height);
+            if (overlay.color) {
+                rect.setAttribute("style", `fill: ${overlay.color}; opacity: 0.18`);
+            }
+            this.ganttChart.appendChild(rect);
+
+            if (overlay.label) {
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("data-type", "range-overlay-label");
+                text.setAttribute("x", x + this.options.textOffsetX);
+                text.setAttribute("y", y + 2);
+                text.textContent = overlay.label;
+                this.ganttChart.appendChild(text);
+            }
+        }
+    }
+
+    #applySelection(scrollIntoView) {
+        const selectedId = this.data.selectedTaskId;
+        const highlightedTaskIds = new Set((this.data.highlightedTaskIds ?? []).filter(x => x));
+        if (selectedId) {
+            highlightedTaskIds.add(selectedId);
+        }
+        const dimNonHighlighted = this.data.dimNonHighlighted === true && highlightedTaskIds.size > 0;
+
+        for (const task of this.tasks) {
+            const isSelected = selectedId && task.id === selectedId;
+            const isHighlighted = highlightedTaskIds.has(task.id);
+            task.shapes.rect?.toggleAttribute("data-selected", !!isSelected);
+            task.shapes.progress?.toggleAttribute("data-selected", !!isSelected);
+            task.shapes.text?.toggleAttribute("data-selected", !!isSelected);
+            task.shapes.progressText?.toggleAttribute("data-selected", !!isSelected);
+            task.shapes.edgeLeft?.toggleAttribute("data-selected", !!isSelected);
+            task.shapes.edgeRight?.toggleAttribute("data-selected", !!isSelected);
+            task.shapes.rect?.toggleAttribute("data-highlighted", !!isHighlighted);
+            task.shapes.text?.toggleAttribute("data-highlighted", !!isHighlighted);
+
+            const relatedTask = selectedId && task.data.links && task.data.links.some(link => link.id === selectedId);
+            task.shapes.rect?.toggleAttribute("data-linked", !!relatedTask);
+            task.shapes.rect?.toggleAttribute("data-dimmed", dimNonHighlighted && !isHighlighted && !relatedTask);
+            task.shapes.progress?.toggleAttribute("data-dimmed", dimNonHighlighted && !isHighlighted && !relatedTask);
+            task.shapes.text?.toggleAttribute("data-dimmed", dimNonHighlighted && !isHighlighted && !relatedTask);
+            task.shapes.progressText?.toggleAttribute("data-dimmed", dimNonHighlighted && !isHighlighted && !relatedTask);
+        }
+
+        const linkElements = this.ganttChart.querySelectorAll('[data-source-id][data-target-id]');
+        for (const element of linkElements) {
+            const sourceId = element.getAttribute('data-source-id');
+            const targetId = element.getAttribute('data-target-id');
+            const isLinked = (selectedId && (sourceId === selectedId || targetId === selectedId))
+                || (highlightedTaskIds.has(sourceId) && highlightedTaskIds.has(targetId));
+            element.toggleAttribute('data-linked', !!isLinked);
+            element.toggleAttribute('data-dimmed', dimNonHighlighted && !isLinked);
+        }
+
+        if (!selectedId) {
+            this.previousSelectedTaskId = null;
+            return;
+        }
+
+        const selectedTask = this.tasks.find(task => task.id === selectedId);
+        if (!selectedTask) {
+            this.previousSelectedTaskId = null;
+            return;
+        }
+
+        const selectionChanged = this.previousSelectedTaskId !== selectedId;
+        if (scrollIntoView && selectionChanged && this.data.scrollSelectedIntoView !== false) {
+            const targetScrollLeft = Math.max(selectedTask.left - this.container.clientWidth * 0.25, 0);
+            const targetScrollTop = Math.max(selectedTask.top - this.options.axisHeight - this.options.taskSpacing, 0);
+            this.container.scrollTo({ left: targetScrollLeft, top: targetScrollTop, behavior: 'smooth' });
+        }
+
+        this.previousSelectedTaskId = selectedId;
     }
 
     updateData(data) {
@@ -716,6 +881,8 @@ class GanntChart {
             this.#addEvents();
         }
 
+        this.#addNonWorkingBands();
+
         for (const task of this.tasks) {
 
             const relativeEpochs = (task.startEpochs - this.minEpochs);
@@ -723,6 +890,24 @@ class GanntChart {
             const width = task.range * this.viewBoxWidth / this.range;
 
             // console.log(`${task.data.name}: task.relativeEpochs=${relativeEpochs}, task.range=${task.range}, this.range=${this.range}, x=${x}, fill=${task.fill}`);
+
+            if (task.baselineStartEpochs !== null && task.baselineEndEpochs !== null) {
+                const baselineRelativeEpochs = task.baselineStartEpochs - this.minEpochs;
+                const baselineX = baselineRelativeEpochs * this.viewBoxWidth / this.range;
+                const baselineWidth = (task.baselineEndEpochs - task.baselineStartEpochs) * this.viewBoxWidth / this.range;
+
+                const baselineElement = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                baselineElement.setAttribute("data-type", "baseline");
+                baselineElement.setAttribute("x", baselineX);
+                baselineElement.setAttribute("y", y + taskHeight - 10);
+                baselineElement.setAttribute("width", baselineWidth);
+                baselineElement.setAttribute("height", 6);
+                baselineElement.setAttribute("rx", 2);
+                if (task.data.baselineColor) {
+                    baselineElement.setAttribute("style", `fill: ${task.data.baselineColor}; stroke: ${task.data.baselineColor}; opacity: 0.45`);
+                }
+                this.ganttChart.appendChild(baselineElement);
+            }
 
             const taskElement = document.createElementNS("http://www.w3.org/2000/svg", "rect");
             taskElement.setAttribute('data-id', task.data.id);
@@ -732,6 +917,9 @@ class GanntChart {
             taskElement.setAttribute('y', y);
             taskElement.setAttribute('width', width);
             taskElement.setAttribute('height', taskHeight);
+            if (task.data.isCritical === true) {
+                taskElement.setAttribute('data-critical', 'true');
+            }
             if (task.data.class) {
                 taskElement.setAttribute('class', task.data.class);
             }
@@ -824,6 +1012,15 @@ class GanntChart {
             task.shapes.text = textElement;
             this.ganttChart.appendChild(textElement);
 
+            if (task.data.rightLabel) {
+                const rightLabelElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                rightLabelElement.setAttribute("data-type", "task-right-label");
+                rightLabelElement.setAttribute("x", task.right + this.options.textOffsetX);
+                rightLabelElement.setAttribute("y", y + this.options.textOffsetY);
+                rightLabelElement.textContent = task.data.rightLabel;
+                this.ganttChart.appendChild(rightLabelElement);
+            }
+
             if (task.data.progress !== undefined && task.data.progress !== null) {
                 const progressWidth = width * task.data.progress;
 
@@ -853,6 +1050,8 @@ class GanntChart {
         }
 
         this.#createLinks();
+        this.#addRangeOverlays();
+        this.#applySelection(true);
     }
 
     #createProgressHandlePath(task, progressHandleElement, progressWidth) {

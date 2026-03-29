@@ -19,4 +19,14 @@ public class MudGanttEvent
     /// Date
     /// </summary>
     public required DateTimeOffset Date { get; set; }
+
+    /// <summary>
+    /// Optional end date for rendering a time-range overlay instead of a single marker.
+    /// </summary>
+    public DateTimeOffset? EndDate { get; set; }
+
+    /// <summary>
+    /// Optional color for event marker or time-range overlay.
+    /// </summary>
+    public string? Color { get; set; }
 }

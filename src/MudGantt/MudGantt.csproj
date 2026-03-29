@@ -4,6 +4,8 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +23,13 @@
         <PackageId>MudGantt</PackageId>
         <WebPage>https://github.com/jerkerolofsson/MudGantt</WebPage>
         <Version>0.1.0</Version>
+        <PackageProjectUrl>https://github.com/Opzet/MudGantt</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/Opzet/MudGantt</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <PackageTags>mudblazor;gantt;scheduling;planning;manufacturing;timeline</PackageTags>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
     
     <ItemGroup>

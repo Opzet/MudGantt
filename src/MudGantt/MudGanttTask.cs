@@ -109,5 +109,30 @@
         /// Optional tooltip text shown for the task bar in the chart.
         /// </summary>
         public string? Tooltip { get; set; }
+
+        /// <summary>
+        /// Optional baseline start date for comparing plan vs actual schedule.
+        /// </summary>
+        public DateTimeOffset? BaselineStartDate { get; set; }
+
+        /// <summary>
+        /// Optional baseline finish date for comparing plan vs actual schedule.
+        /// </summary>
+        public DateTimeOffset? BaselineEndDate { get; set; }
+
+        /// <summary>
+        /// Optional color for baseline rendering.
+        /// </summary>
+        public string? BaselineColor { get; set; }
+
+        /// <summary>
+        /// Indicates whether the task belongs to the critical path.
+        /// </summary>
+        public bool IsCritical { get; set; }
+
+        /// <summary>
+        /// Optional label rendered to the right of the task bar.
+        /// </summary>
+        public string? RightLabel { get; set; }
     }
 }
