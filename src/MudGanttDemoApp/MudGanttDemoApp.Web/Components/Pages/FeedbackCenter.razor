@@ -1,0 +1,124 @@
+@page "/sample/feedback"
+@using System.Net.Http.Json
+@using MudGanttDemoApp.Web.FeedbackApi
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Feedback Center</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+            <div>
+                <MudText Typo="Typo.h4">Bug capture and Copilot feedback</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Capture issues as persisted JSON so rapid rectification can work from real structured feedback.</MudText>
+            </div>
+            <MudButton Href="api/feedback/bugs/export" Variant="Variant.Outlined" Color="Color.Info">Download JSON</MudButton>
+        </MudStack>
+
+        <MudGrid>
+            <MudItem xs="12" lg="5">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudText Typo="Typo.h6" Class="mb-2">New feedback</MudText>
+                    <MudStack Spacing="2">
+                        <MudTextField @bind-Value="_model.Area" Label="Area" Variant="Variant.Outlined" />
+                        <MudTextField @bind-Value="_model.Title" Label="Title" Variant="Variant.Outlined" />
+                        <MudSelect T="string" Label="Severity" Value="@_model.Severity" ValueChanged="OnSeverityChanged">
+                            <MudSelectItem T="string" Value="@LowSeverity">Low</MudSelectItem>
+                            <MudSelectItem T="string" Value="@MediumSeverity">Medium</MudSelectItem>
+                            <MudSelectItem T="string" Value="@HighSeverity">High</MudSelectItem>
+                            <MudSelectItem T="string" Value="@CriticalSeverity">Critical</MudSelectItem>
+                        </MudSelect>
+                        <MudTextField @bind-Value="_model.ClientOrProject" Label="Client / Project" Variant="Variant.Outlined" />
+                        <MudTextField @bind-Value="_model.SuggestedBy" Label="Reported by" Variant="Variant.Outlined" />
+                        <MudTextField @bind-Value="_model.ReproductionSteps" Label="Reproduction steps" Variant="Variant.Outlined" Lines="4" />
+                        <MudTextField @bind-Value="_model.ExpectedBehavior" Label="Expected behavior" Variant="Variant.Outlined" Lines="3" />
+                        <MudTextField @bind-Value="_model.ActualBehavior" Label="Actual behavior" Variant="Variant.Outlined" Lines="3" />
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitAsync">Capture feedback</MudButton>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" lg="7">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudText Typo="Typo.h6" Class="mb-2">Captured feedback</MudText>
+                    <MudTable Items="_items" Dense="true" Hover="true" Height="560px" FixedHeader="true">
+                        <HeaderContent>
+                            <MudTh>Created</MudTh>
+                            <MudTh>Area</MudTh>
+                            <MudTh>Title</MudTh>
+                            <MudTh>Severity</MudTh>
+                            <MudTh>Status</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Created">@context.CreatedUtc.ToString("dd MMM HH:mm")</MudTd>
+                            <MudTd DataLabel="Area">@context.Area</MudTd>
+                            <MudTd DataLabel="Title">@context.Title</MudTd>
+                            <MudTd DataLabel="Severity">@context.Severity</MudTd>
+                            <MudTd DataLabel="Status">@context.Status</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudStack>
+</MudContainer>
+
+@code {
+    private HttpClient _http = default!;
+    private const string LowSeverity = "Low";
+    private const string MediumSeverity = "Medium";
+    private const string HighSeverity = "High";
+    private const string CriticalSeverity = "Critical";
+    private List<BugFeedbackDto> _items = [];
+    private BugFeedbackDto _model = CreateModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _http = HttpClientFactory.CreateClient();
+        _http.BaseAddress = new Uri(NavigationManager.BaseUri);
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _items = await _http.GetFromJsonAsync<List<BugFeedbackDto>>("api/feedback/bugs") ?? [];
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_model.Area) || string.IsNullOrWhiteSpace(_model.Title) || string.IsNullOrWhiteSpace(_model.ReproductionSteps) || string.IsNullOrWhiteSpace(_model.ExpectedBehavior) || string.IsNullOrWhiteSpace(_model.ActualBehavior))
+        {
+            Snackbar.Add("Area, title, reproduction steps, expected behavior, and actual behavior are required.", Severity.Warning);
+            return;
+        }
+
+        _model.Id = Guid.NewGuid().ToString("N");
+        _model.CreatedUtc = DateTimeOffset.UtcNow;
+        var response = await _http.PostAsJsonAsync("api/feedback/bugs", _model);
+        if (!response.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Unable to save feedback.", Severity.Error);
+            return;
+        }
+
+        Snackbar.Add("Feedback captured.", Severity.Success);
+        _model = CreateModel();
+        await LoadAsync();
+    }
+
+    private void OnSeverityChanged(string severity) => _model.Severity = severity;
+
+    private static BugFeedbackDto CreateModel() => new()
+    {
+        Id = string.Empty,
+        CreatedUtc = DateTimeOffset.UtcNow,
+        Area = string.Empty,
+        Title = string.Empty,
+        Severity = "Medium",
+        ReproductionSteps = string.Empty,
+        ExpectedBehavior = string.Empty,
+        ActualBehavior = string.Empty,
+        Status = "New"
+    };
+}

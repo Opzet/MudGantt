@@ -1,0 +1,39 @@
+@page "/sample/operations"
+@inject ISnackbar Snackbar
+
+<PageTitle>Operations Gantt Example</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-0 mt-4">
+    <MudPaper Class="pa-3 mb-3" Elevation="0">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+            <div>
+                <MudText Typo="Typo.h4">Operations board</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Dense, read-only example for support lanes and shift-style visualisation.</MudText>
+            </div>
+            <GanttZoomControls Color="Color.Info" OnZoomIn="ZoomIn" OnZoomOut="ZoomOut" OnReset="ResetZoom" />
+        </MudStack>
+    </MudPaper>
+
+    <MudPaper Elevation="0" Class="gantt-fixed-panel">
+        <MudGanttChart @ref="_chart"
+                       Tasks="_tasks"
+                       Events="_events"
+                       Dense="true"
+                       Size="Size.Small"
+                       ReadOnly="true"
+                       Color="Color.Info"
+                       Variant="Variant.Outlined"
+                       TaskClicked="OnTaskClicked" />
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudGanttChart _chart = default!;
+    private readonly IReadOnlyList<MudGanttTask> _tasks = GanttExampleData.CreateOperationsTasks();
+    private readonly IReadOnlyList<MudGanttEvent> _events = [];
+
+    private void OnTaskClicked(MudGanttTask task) => Snackbar.Add(task.Name, Severity.Normal);
+    private Task ZoomIn() => _chart.ZoomInAsync(20);
+    private Task ZoomOut() => _chart.ZoomOutAsync(20);
+    private Task ResetZoom() => _chart.ResetZoomAsync();
+}

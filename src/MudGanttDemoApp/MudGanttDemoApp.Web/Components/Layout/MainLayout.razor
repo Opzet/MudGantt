@@ -1,25 +1,53 @@
 ﻿@using MudBlazor
 @inherits LayoutComponentBase
 
-<div class="page">
-    <MudThemeProvider />
-    <MudPopoverProvider />
-    <MudDialogProvider MaxWidth="MaxWidth.ExtraLarge" />
-    <MudSnackbarProvider />
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider MaxWidth="MaxWidth.ExtraLarge" />
+<MudSnackbarProvider />
 
-    <div class="sidebar">
+<MudLayout Class="app-shell">
+    <MudAppBar Elevation="1" Dense="true">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="ToggleDrawer" />
+
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+            <MudIcon Icon="@Icons.Material.Filled.Schema" />
+            <MudText Typo="Typo.h6">MudGantt Demo App</MudText>
+            <MudHidden Breakpoint="Breakpoint.SmAndDown">
+                <MudText Typo="Typo.caption" Class="mud-secondary-text">Planning, MES and transparency demos</MudText>
+            </MudHidden>
+        </MudStack>
+
+        <MudSpacer />
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen"
+               Variant="DrawerVariant.Responsive"
+               Breakpoint="Breakpoint.Md"
+               Elevation="1"
+               ClipMode="DrawerClipMode.Always"
+               Class="app-drawer">
         <NavMenu />
-    </div>
+    </MudDrawer>
 
-    <main>
-        <article class="content px-4">
+    <MudMainContent Class="app-main">
+        <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
             @Body
-        </article>
-    </main>
-</div>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code {
+    private bool _drawerOpen = true;
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+}

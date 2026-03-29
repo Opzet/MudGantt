@@ -1,0 +1,18 @@
+<MudPaper Elevation="1" Class="pa-3">
+    <MudText Typo="Typo.caption" Color="Color.Secondary">@Label</MudText>
+    @if (ValueContent is not null)
+    {
+        @ValueContent
+    }
+    else
+    {
+        <MudText Typo="Typo.h5" Color="@Color">@Value</MudText>
+    }
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public Color Color { get; set; } = Color.Default;
+    [Parameter] public RenderFragment? ValueContent { get; set; }
+}

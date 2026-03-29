@@ -1,0 +1,80 @@
+@using MudGanttDemoApp.Web.ManufacturingApi
+
+<MudPaper Class="pa-4 page-toolbar-card" Elevation="2">
+    <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+        <MudSelect T="string" Label="Client" Value="@SelectedClient" ValueChanged="OnClientChanged" Style="min-width:260px">
+            <MudSelectItem T="string" Value="@ManufacturingQueries.AllClients">All clients</MudSelectItem>
+            @foreach (var client in Clients)
+            {
+                <MudSelectItem T="string" Value="@client">@client</MudSelectItem>
+            }
+        </MudSelect>
+        <MudSelect T="string" Label="Machine" Value="@SelectedMachine" ValueChanged="OnMachineChanged" Style="min-width:220px">
+            <MudSelectItem T="string" Value="@ManufacturingQueries.AllMachines">All machines</MudSelectItem>
+            @foreach (var machine in Machines)
+            {
+                <MudSelectItem T="string" Value="@machine">@machine</MudSelectItem>
+            }
+        </MudSelect>
+        <MudTextField T="string"
+                      Value="@Search"
+                      ValueChanged="OnSearchChanged"
+                      Placeholder="Search job, machine, worker"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Immediate="true"
+                      Style="min-width:240px"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search" />
+        <MudCheckBox T="bool" Value="@CriticalOnly" ValueChanged="@(value => CriticalOnlyChanged.InvokeAsync(value))" Label="Critical only" Color="Color.Error" Dense="true" />
+        <MudCheckBox T="bool" Value="@ConflictsOnly" ValueChanged="@(value => ConflictsOnlyChanged.InvokeAsync(value))" Label="Conflicts" Color="Color.Warning" Dense="true" />
+        <MudCheckBox T="bool" Value="@DelayedOnly" ValueChanged="@(value => DelayedOnlyChanged.InvokeAsync(value))" Label="Delayed" Color="Color.Info" Dense="true" />
+        <MudSelect T="string" Label="Named view" Value="@SelectedPresetName" ValueChanged="OnPresetChanged" Style="min-width:220px">
+            <MudSelectItem T="string" Value="@CurrentFiltersPreset">Current filters</MudSelectItem>
+            @foreach (var preset in Presets)
+            {
+                <MudSelectItem T="string" Value="@preset.Name">@preset.Name</MudSelectItem>
+            }
+        </MudSelect>
+        <MudTextField T="string" Value="@PresetName" ValueChanged="OnPresetNameChanged" Placeholder="Save current view" Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width:180px" />
+        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.BookmarkAdd" OnClick="OnSavePreset">Save</MudButton>
+        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Delete" OnClick="OnDeletePreset" Disabled="DisableDeletePreset">Delete</MudButton>
+        <MudSpacer />
+        <GanttZoomControls OnZoomIn="OnZoomIn" OnZoomOut="OnZoomOut" OnReset="OnResetZoom" />
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<string> Clients { get; set; } = [];
+    [Parameter, EditorRequired] public IReadOnlyList<string> Machines { get; set; } = [];
+    [Parameter, EditorRequired] public IReadOnlyList<ManufacturingViewPreset> Presets { get; set; } = [];
+    [Parameter] public string SelectedClient { get; set; } = ManufacturingQueries.AllClients;
+    [Parameter] public string SelectedMachine { get; set; } = ManufacturingQueries.AllMachines;
+    [Parameter] public string Search { get; set; } = string.Empty;
+    [Parameter] public bool CriticalOnly { get; set; }
+    [Parameter] public bool ConflictsOnly { get; set; }
+    [Parameter] public bool DelayedOnly { get; set; }
+    [Parameter] public string CurrentFiltersPreset { get; set; } = "__current";
+    [Parameter] public string SelectedPresetName { get; set; } = "__current";
+    [Parameter] public string PresetName { get; set; } = string.Empty;
+    [Parameter] public bool DisableDeletePreset { get; set; }
+    [Parameter] public EventCallback<string> SelectedClientChanged { get; set; }
+    [Parameter] public EventCallback<string> SelectedMachineChanged { get; set; }
+    [Parameter] public EventCallback<string> SearchChanged { get; set; }
+    [Parameter] public EventCallback<bool> CriticalOnlyChanged { get; set; }
+    [Parameter] public EventCallback<bool> ConflictsOnlyChanged { get; set; }
+    [Parameter] public EventCallback<bool> DelayedOnlyChanged { get; set; }
+    [Parameter] public EventCallback<string> SelectedPresetNameChanged { get; set; }
+    [Parameter] public EventCallback<string> PresetNameChanged { get; set; }
+    [Parameter] public EventCallback OnSavePreset { get; set; }
+    [Parameter] public EventCallback OnDeletePreset { get; set; }
+    [Parameter] public EventCallback OnZoomIn { get; set; }
+    [Parameter] public EventCallback OnZoomOut { get; set; }
+    [Parameter] public EventCallback OnResetZoom { get; set; }
+
+    private Task OnClientChanged(string value) => SelectedClientChanged.InvokeAsync(value);
+    private Task OnMachineChanged(string value) => SelectedMachineChanged.InvokeAsync(value);
+    private Task OnSearchChanged(string value) => SearchChanged.InvokeAsync(value);
+    private Task OnPresetChanged(string value) => SelectedPresetNameChanged.InvokeAsync(value);
+    private Task OnPresetNameChanged(string value) => PresetNameChanged.InvokeAsync(value);
+}

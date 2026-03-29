@@ -1,0 +1,133 @@
+@page "/sample/gantt-calendar-sync"
+@using MudGanttDemoApp.Web.SchedulerApi
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Gantt + Calendar Sync</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+            <div>
+                <MudText Typo="Typo.h4">Gantt + Calendar synchronized view</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Shared project data, shared phase filter, and synchronized summary for timeline + calendar planning.</MudText>
+            </div>
+            <MudChipSet T="string" SelectedValue="@_selectedPhase" SelectedValueChanged="OnPhaseChanged" Mandatory="false">
+                <MudChip Value="@AllPhase">All</MudChip>
+                @foreach (var phase in _phases)
+                {
+                    <MudChip Value="@phase">@phase</MudChip>
+                }
+            </MudChipSet>
+        </MudStack>
+
+        @if (_project is null)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else
+        {
+            <MudGrid>
+                <MudItem xs="12" lg="7">
+                    <MudPaper Class="pa-4" Elevation="1" Style="height:420px;">
+                        <MudGanttChart @ref="_chart"
+                                       Tasks="FilteredTasks"
+                                       Events="_events"
+                                       Dense="true"
+                                       Size="Size.Small"
+                                       ReadOnly="true"
+                                       Color="Color.Primary"
+                                       Variant="Variant.Outlined" />
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" lg="5">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudCalendar T="CalendarExampleItem" Items="FilteredCalendarItems" />
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.h6" Class="mb-2">Visible tasks</MudText>
+                <MudSimpleTable>
+                    <thead>
+                        <tr>
+                            <th>Task</th>
+                            <th>Phase</th>
+                            <th>Start</th>
+                            <th>Finish</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var task in FilteredSourceTasks)
+                        {
+                            <tr>
+                                <td>@task.Name</td>
+                                <td>@task.Phase</td>
+                                <td>@task.StartDate?.ToString("dd MMM HH:mm")</td>
+                                <td>@task.EndDate?.ToString("dd MMM HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            </MudPaper>
+        }
+    </MudStack>
+</MudContainer>
+
+@code {
+    private MudGanttChart _chart = default!;
+    private const string AllPhase = "All";
+    private HttpClient _http = default!;
+    private SchedulerProjectDto? _project;
+    private IReadOnlyList<string> _phases = [];
+    private string _selectedPhase = AllPhase;
+    private IReadOnlyList<MudGanttEvent> _events = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _http = HttpClientFactory.CreateClient();
+        _http.BaseAddress = new Uri(NavigationManager.BaseUri);
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _project = await _http.GetFromJsonAsync<SchedulerProjectDto>("api/scheduler/project");
+        if (_project is null)
+        {
+            return;
+        }
+
+        _phases = _project.Tasks.Select(x => x.Phase ?? "Unspecified").Distinct().OrderBy(x => x).ToList();
+        _events =
+        [
+            new MudGanttEvent { Id = "go-live", Name = "Go Live", Date = _project.Tasks[^1].EndDate ?? DateTimeOffset.UtcNow }
+        ];
+    }
+
+    private IEnumerable<SchedulerTaskItemDto> FilteredSourceTasks => _project?.Tasks.Where(x => _selectedPhase == AllPhase || (x.Phase ?? "Unspecified") == _selectedPhase) ?? [];
+
+    private IReadOnlyList<MudGanttTask> FilteredTasks => FilteredSourceTasks.Select(task => new MudGanttTask
+    {
+        Id = task.Id,
+        Name = task.Name,
+        StartDate = task.StartDate,
+        EndDate = task.EndDate,
+        Progress = task.Progress,
+        Color = task.Color,
+        Links = task.Links.Select(link => new Link(link.Id, link.LinkType)).ToArray(),
+        RightLabel = task.Phase,
+        IsCritical = task.Links.Count > 0 && (task.Phase == "Validate" || task.Phase == "Release")
+    }).ToList();
+
+    private IReadOnlyList<CalendarExampleItem> FilteredCalendarItems => FilteredSourceTasks
+        .SelectMany(task => new[]
+        {
+            new CalendarExampleItem { Start = task.StartDate?.DateTime ?? DateTime.UtcNow, Text = $"Start · {task.Name}", Category = task.Phase },
+            new CalendarExampleItem { Start = task.EndDate?.DateTime ?? DateTime.UtcNow, Text = $"Finish · {task.Name}", Category = task.Phase }
+        })
+        .ToList();
+
+    private void OnPhaseChanged(string phase) => _selectedPhase = phase;
+}

@@ -1,0 +1,122 @@
+@using MudGantt
+
+<MudPaper Elevation="0" Class="gantt-task-list-panel" Style="@PanelStyle">
+    <MudPaper Elevation="1" Class="pa-3 gantt-task-list-header">
+        @if (AttendanceMode)
+        {
+            <MudGrid Spacing="1">
+                <MudItem xs="2">
+                    <MudText Typo="Typo.subtitle2" Align="Align.Center"><strong>#</strong></MudText>
+                </MudItem>
+                <MudItem xs="10">
+                    <MudText Typo="Typo.subtitle2"><strong>Name / Attendance</strong></MudText>
+                </MudItem>
+            </MudGrid>
+        }
+        else
+        {
+            <MudGrid Spacing="1">
+                <MudItem xs="1">
+                    <MudText Typo="Typo.subtitle2" Align="Align.Center"><strong>#</strong></MudText>
+                </MudItem>
+                <MudItem xs="4">
+                    <MudText Typo="Typo.subtitle2"><strong>Task Name</strong></MudText>
+                </MudItem>
+                <MudItem xs="2">
+                    <MudText Typo="Typo.subtitle2"><strong>Start</strong></MudText>
+                </MudItem>
+                <MudItem xs="2">
+                    <MudText Typo="Typo.subtitle2"><strong>End</strong></MudText>
+                </MudItem>
+                <MudItem xs="1">
+                    <MudText Typo="Typo.subtitle2" Align="Align.Center"><strong>Days</strong></MudText>
+                </MudItem>
+                <MudItem xs="2">
+                    <MudText Typo="Typo.subtitle2" Align="Align.Center"><strong>Progress</strong></MudText>
+                </MudItem>
+            </MudGrid>
+        }
+    </MudPaper>
+
+    @foreach (var taskWithIndex in Tasks.Select((t, i) => new { Task = t, Index = i }))
+    {
+        var isSelected = SelectedTask?.Id == taskWithIndex.Task.Id;
+        var rowClass = isSelected ? "pa-3 gantt-task-row gantt-task-row-selected" : "pa-3 gantt-task-row";
+        <MudPaper Elevation="0"
+                  Class="@rowClass"
+                  @onclick="() => OnSelectTask.InvokeAsync(taskWithIndex.Task)"
+                  @ondblclick="() => OnEditTask.InvokeAsync(taskWithIndex.Task)">
+            @if (AttendanceMode)
+            {
+                <MudGrid Spacing="1">
+                    <MudItem xs="2">
+                        <MudText Typo="Typo.body2" Align="Align.Center" Class="font-weight-medium">
+                            @(taskWithIndex.Index + 1)
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="10">
+                        <MudText Typo="Typo.body2">@taskWithIndex.Task.Name</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            In: @(taskWithIndex.Task.StartDate?.ToString("HH:mm") ?? "-") | Out: @(taskWithIndex.Task.EndDate?.ToString("HH:mm") ?? "-")
+                        </MudText>
+                    </MudItem>
+                </MudGrid>
+            }
+            else
+            {
+                <MudGrid Spacing="1">
+                    <MudItem xs="1">
+                        <MudText Typo="Typo.body2" Align="Align.Center" Class="font-weight-medium">
+                            @(taskWithIndex.Index + 1)
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                            @if (!string.IsNullOrEmpty(taskWithIndex.Task.Color))
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small" Style="@($"color: {taskWithIndex.Task.Color};")" />
+                            }
+                            <MudText Typo="Typo.body2" Class="flex-grow-1">@taskWithIndex.Task.Name</MudText>
+                        </MudStack>
+                    </MudItem>
+                    <MudItem xs="2">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@(taskWithIndex.Task.StartDate?.ToString("MM/dd/yy") ?? "-")</MudText>
+                    </MudItem>
+                    <MudItem xs="2">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@(taskWithIndex.Task.EndDate?.ToString("MM/dd/yy") ?? "-")</MudText>
+                    </MudItem>
+                    <MudItem xs="1">
+                        <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Info">@HomePageSupport.GetDuration(taskWithIndex.Task)</MudText>
+                    </MudItem>
+                    <MudItem xs="2">
+                        <MudStack Spacing="0" AlignItems="AlignItems.Center">
+                            <MudProgressLinear Color="@HomePageSupport.GetProgressColor(taskWithIndex.Task)"
+                                               Value="@((taskWithIndex.Task.Progress ?? 0) * 100)"
+                                               Size="Size.Small"
+                                               Style="width: 100%;" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@((taskWithIndex.Task.Progress ?? 0).ToString("P0"))</MudText>
+                        </MudStack>
+                    </MudItem>
+                </MudGrid>
+            }
+        </MudPaper>
+    }
+
+    @if (Tasks.Count == 0)
+    {
+        <MudPaper Elevation="0" Class="pa-8 text-center">
+            <MudIcon Icon="@Icons.Material.Filled.InsertDriveFile" Size="Size.Large" Color="Color.Secondary" />
+            <MudText Typo="Typo.h6" Color="Color.Secondary">No tasks available</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Click "Add Task" to create a new task</MudText>
+        </MudPaper>
+    }
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<MudGanttTask> Tasks { get; set; } = [];
+    [Parameter] public MudGanttTask? SelectedTask { get; set; }
+    [Parameter] public bool AttendanceMode { get; set; }
+    [Parameter, EditorRequired] public string PanelStyle { get; set; } = string.Empty;
+    [Parameter] public EventCallback<MudGanttTask> OnSelectTask { get; set; }
+    [Parameter] public EventCallback<MudGanttTask> OnEditTask { get; set; }
+}

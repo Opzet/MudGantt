@@ -1,0 +1,87 @@
+@page "/sample/capability-matrix"
+
+<PageTitle>Capability Matrix</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="3">
+        <div>
+            <MudText Typo="Typo.h4">Capability matrix, rubric, and roadmap</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Product completeness view for implemented features, verification readiness, and next supportability improvements.</MudText>
+        </div>
+
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudText Typo="Typo.h6" Class="mb-2">Implemented capability matrix</MudText>
+            <MudSimpleTable>
+                <thead>
+                    <tr>
+                        <th>Area</th>
+                        <th>Capability</th>
+                        <th>Status</th>
+                        <th>Evidence</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in ProductReadinessData.Capabilities)
+                    {
+                        <tr>
+                            <td>@row.Area</td>
+                            <td>@row.Capability</td>
+                            <td>@row.Status</td>
+                            <td>@row.Evidence</td>
+                            <td>@row.Notes</td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        </MudPaper>
+
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudText Typo="Typo.h6" Class="mb-2">Verification rubric / matrix</MudText>
+            <MudSimpleTable>
+                <thead>
+                    <tr>
+                        <th>Capability</th>
+                        <th>Scenario</th>
+                        <th>Verification</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in ProductReadinessData.TestRubric)
+                    {
+                        <tr>
+                            <td>@row.Capability</td>
+                            <td>@row.Scenario</td>
+                            <td>@row.Verification</td>
+                            <td>@row.Status</td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        </MudPaper>
+
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudText Typo="Typo.h6" Class="mb-2">Roadmap</MudText>
+            <MudSimpleTable>
+                <thead>
+                    <tr>
+                        <th>Horizon</th>
+                        <th>Item</th>
+                        <th>Outcome</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in ProductReadinessData.Roadmap)
+                    {
+                        <tr>
+                            <td>@row.Horizon</td>
+                            <td>@row.Item</td>
+                            <td>@row.Outcome</td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        </MudPaper>
+    </MudStack>
+</MudContainer>

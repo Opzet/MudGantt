@@ -1,0 +1,135 @@
+@page "/sample/portfolio"
+@using MudGanttDemoApp.Web.ManufacturingApi
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Portfolio Planning</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+            <div>
+                <MudText Typo="Typo.h4">Portfolio planning</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Cross-client planning layer showing one timeline across multiple client delivery streams.</MudText>
+            </div>
+            <MudTextField @bind-Value="_search" Placeholder="Filter client" Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Style="min-width:240px" />
+        </MudStack>
+
+        @if (_dataset is null)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else
+        {
+            <MudGrid>
+                <MudItem xs="12" md="4"><MudPaper Class="pa-3" Elevation="1"><MudText Typo="Typo.subtitle2">Clients</MudText><MudText Typo="Typo.h4">@PortfolioRows.Count</MudText></MudPaper></MudItem>
+                <MudItem xs="12" md="4"><MudPaper Class="pa-3" Elevation="1"><MudText Typo="Typo.subtitle2">Critical programs</MudText><MudText Typo="Typo.h4">@PortfolioRows.Count(x => x.IsCritical)</MudText></MudPaper></MudItem>
+                <MudItem xs="12" md="4"><MudPaper Class="pa-3" Elevation="1"><MudText Typo="Typo.subtitle2">At-risk programs</MudText><MudText Typo="Typo.h4">@PortfolioRows.Count(x => x.HasConflict || x.DelayHours > 0)</MudText></MudPaper></MudItem>
+            </MudGrid>
+
+            <MudPaper Class="pa-4" Elevation="1" Style="height:420px;">
+                <MudGanttChart Tasks="PortfolioTasks"
+                               Events="_dataset.Holidays"
+                               Dense="true"
+                               Size="Size.Small"
+                               ReadOnly="true"
+                               Color="Color.Tertiary"
+                               Variant="Variant.Outlined"
+                               SelectedTaskId="@_selectedClient"
+                               TaskClicked="OnTaskClicked" />
+            </MudPaper>
+
+            <MudGrid>
+                <MudItem xs="12" lg="7">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudSimpleTable>
+                            <thead>
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Jobs</th>
+                                    <th>Progress</th>
+                                    <th>Delay</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in PortfolioRows)
+                                {
+                                    <tr class="@(row.Client == _selectedClient ? "selected-flow-row" : null)" @onclick="() => _selectedClient = row.Client">
+                                        <td>@row.Client</td>
+                                        <td>@row.JobCount</td>
+                                        <td>@row.Progress.ToString("P0")</td>
+                                        <td>@row.DelayHours h</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" lg="5">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        @if (SelectedPortfolio is not null)
+                        {
+                            <MudText Typo="Typo.h6">@SelectedPortfolio.Client</MudText>
+                            <MudText Typo="Typo.body2">Jobs: @SelectedPortfolio.JobCount</MudText>
+                            <MudText Typo="Typo.body2">Progress: @SelectedPortfolio.Progress.ToString("P0")</MudText>
+                            <MudText Typo="Typo.body2">Delay: @SelectedPortfolio.DelayHours h</MudText>
+                            <MudText Typo="Typo.body2">Conflicts: @(SelectedPortfolio.HasConflict ? "Yes" : "No")</MudText>
+                        }
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        }
+    </MudStack>
+</MudContainer>
+
+@code {
+    private HttpClient _http = default!;
+    private ManufacturingDatasetDto? _dataset;
+    private string _search = string.Empty;
+    private string? _selectedClient;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _http = HttpClientFactory.CreateClient();
+        _http.BaseAddress = new Uri(NavigationManager.BaseUri);
+        _dataset = await _http.GetFromJsonAsync<ManufacturingDatasetDto>("api/manufacturing/dataset?jobs=800");
+        _selectedClient = _dataset?.Clients.FirstOrDefault();
+    }
+
+    private IReadOnlyList<PortfolioRow> PortfolioRows => _dataset?.Jobs
+        .Where(job => string.IsNullOrWhiteSpace(_search) || job.Client.Contains(_search, StringComparison.OrdinalIgnoreCase))
+        .GroupBy(job => job.Client)
+        .Select(group => new PortfolioRow(
+            group.Key,
+            group.Count(),
+            group.Min(x => x.StartDate),
+            group.Max(x => x.EndDate),
+            group.Average(x => x.Progress),
+            Math.Round(group.Max(x => x.DelayHours), 1),
+            group.Any(x => x.IsCritical),
+            group.Any(x => x.HasConflict)))
+        .OrderBy(x => x.StartDate)
+        .ToList() ?? [];
+
+    private IReadOnlyList<MudGanttTask> PortfolioTasks => PortfolioRows.Select(row => new MudGanttTask
+    {
+        Id = row.Client,
+        Name = row.Client,
+        StartDate = row.StartDate,
+        EndDate = row.EndDate,
+        Progress = row.Progress,
+        Color = row.IsCritical ? "#dc2626" : "#7c3aed",
+        IsCritical = row.IsCritical || row.HasConflict,
+        RightLabel = $"{row.JobCount} jobs"
+    }).ToList();
+
+    private PortfolioRow? SelectedPortfolio => PortfolioRows.FirstOrDefault(x => x.Client == _selectedClient);
+
+    private Task OnTaskClicked(MudGanttTask task)
+    {
+        _selectedClient = task.Id;
+        return Task.CompletedTask;
+    }
+
+    private sealed record PortfolioRow(string Client, int JobCount, DateTimeOffset StartDate, DateTimeOffset EndDate, double Progress, double DelayHours, bool IsCritical, bool HasConflict);
+}

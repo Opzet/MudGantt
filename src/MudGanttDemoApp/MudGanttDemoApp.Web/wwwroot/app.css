@@ -54,3 +54,162 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+.selected-flow-row {
+    background-color: var(--mud-palette-action-hover);
+}
+
+@media (min-width: 1200px) {
+    .cockpit-detail-pane {
+        position: sticky;
+        top: 1rem;
+    }
+}
+
+.page-header-card {
+    margin-bottom: 1rem;
+}
+
+.page-toolbar-card {
+    margin-bottom: 1rem;
+}
+
+.gantt-split-surface {
+    height: 600px;
+    overflow: hidden;
+}
+
+.gantt-split-stack {
+    height: 100%;
+}
+
+.gantt-task-list-panel {
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-right: 2px solid var(--mud-palette-divider);
+}
+
+.gantt-task-list-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.gantt-task-list-panel::-webkit-scrollbar-track {
+    background: var(--mud-palette-background-grey);
+}
+
+.gantt-task-list-panel::-webkit-scrollbar-thumb {
+    background: var(--mud-palette-divider);
+    border-radius: 4px;
+}
+
+.gantt-task-list-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--mud-palette-text-secondary);
+}
+
+.gantt-task-list-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--mud-palette-surface);
+}
+
+.gantt-task-row {
+    cursor: pointer;
+    border-bottom: 1px solid var(--mud-palette-divider-light);
+    transition: all 0.2s;
+}
+
+.gantt-task-row:hover {
+    background-color: var(--mud-palette-action-hover) !important;
+}
+
+.gantt-task-row-selected {
+    background-color: var(--mud-palette-primary-lighten) !important;
+    border-left: 4px solid var(--mud-palette-primary) !important;
+}
+
+.gantt-chart-panel {
+    overflow: auto;
+    min-width: 0;
+}
+
+.stats-card {
+    border-left-width: 4px;
+    border-left-style: solid;
+}
+
+.stats-card-primary {
+    border-left-color: var(--mud-palette-primary);
+}
+
+.stats-card-success {
+    border-left-color: var(--mud-palette-success);
+}
+
+.stats-card-info {
+    border-left-color: var(--mud-palette-info);
+}
+
+.stats-card-warning {
+    border-left-color: var(--mud-palette-warning);
+}
+
+.gantt-fixed-panel {
+    height: 430px;
+    overflow: hidden;
+}
+
+.attendance-page {
+    width: calc(100% + 3rem);
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+}
+
+.attendance-surface {
+    border: 0;
+    border-radius: 0;
+    height: 420px;
+    overflow: hidden;
+}
+
+.attendance-stack {
+    height: 100%;
+}
+
+.attendance-list-panel {
+    overflow: auto;
+}
+
+.attendance-row {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--mud-palette-divider);
+    padding: 0 8px;
+    box-sizing: border-box;
+}
+
+.attendance-row-text {
+    width: 100%;
+    font-size: 0.80rem;
+    line-height: 1.1rem;
+    overflow: hidden;
+    text-overflow: clip;
+    white-space: nowrap;
+}
+
+.attendance-chart-host {
+    min-width: 0;
+    overflow: auto;
+}
+
+.attendance-gantt-scroll {
+    width: 100%;
+    height: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+}
+
+.attendance-gantt-canvas {
+    min-width: 1400px;
+    height: 100%;
+}

@@ -1,184 +1,290 @@
 ﻿@page "/sample"
-@using MudBlazor
-@using MudBlazor.Utilities
-@inject ISnackbar snackbar
 
-<PageTitle>Sample</PageTitle>
+<PageTitle>Gantt Examples</PageTitle>
 
-<MudThemeProvider IsDarkMode="@_darkMode" />
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudStack Spacing="3">
+        <div>
+            <MudText Typo="Typo.h3">Gantt examples</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">Browse focused examples for planning, dependencies, operations, and attendance-style layouts.</MudText>
+        </div>
 
-<h1>MudGanttChart</h1>
+        <MudGrid>
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Manufacturing flow</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Linked top/bottom Gantt view for client jobs and machine-worker execution flow.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/manufacturing-flow" Variant="Variant.Filled" Color="Color.Primary">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-<MudGanttChart 
-    TaskClicked="OnTaskClicked"
-    @bind-Tasks="@_tasks" Events="@_events" Color="@_color" Variant="@_variant" ReadOnly="@_readOnly" Dense="@_dense" Size="@_size">
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Advanced roster planner</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Rotation planning concepts adapted to the current scheduler resources and shift preview workflow.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="roster/advanced" Variant="Variant.Filled" Color="Color.Primary">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-    <TaskContextMenu>
-		@if(context is not null)
-		{
-			<MudMenuItem OnClick="() => MakeTaskBlue(context)">Make it blue</MudMenuItem>
-			<MudMenuItem Icon="@Icons.Material.Outlined.Delete" OnClick="() => DeleteTask(context)">Delete @context.Name</MudMenuItem>
-		}
-    </TaskContextMenu>
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Project health dashboard</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Burndown, risk scoring, and manufacturing delivery health based on current demo data.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="project-health" Variant="Variant.Filled" Color="Color.Info">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-</MudGanttChart>
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Portfolio planning</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Cross-client rollup timeline for program and plant-level planning.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/portfolio" Variant="Variant.Filled" Color="Color.Tertiary">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-<MudStack Row>
-    <MudPaper Class="pa-5">
-        <MudRadioGroup @bind-Value="@_color">
-            <MudStack Spacing="1">
-                <MudRadio Value="Color.Primary">Primary</MudRadio>
-                <MudRadio Value="Color.Secondary">Secondary</MudRadio>
-                <MudRadio Value="Color.Tertiary">Tertiary</MudRadio>
-                <MudRadio Value="Color.Success">Success</MudRadio>
-                <MudRadio Value="Color.Default">Default</MudRadio>
-                <MudRadio Value="Color.Surface">Surface</MudRadio>
-            </MudStack>
-        </MudRadioGroup>
-    </MudPaper>
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Capability matrix</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Implemented feature matrix, verification rubric, and roadmap view.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/capability-matrix" Variant="Variant.Filled" Color="Color.Secondary">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-    <MudPaper Class="pa-5">
-        <MudRadioGroup @bind-Value="@_variant">
-            <MudRadio Value="Variant.Outlined">Outlined</MudRadio>
-            <MudRadio Value="Variant.Filled">Filled</MudRadio>
-        </MudRadioGroup>
-    </MudPaper>
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Feedback center</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Capture bugs and structured Copilot feedback persisted as JSON.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/feedback" Variant="Variant.Filled" Color="Color.Warning">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-    <MudPaper Class="pa-5">
-        <MudCheckBox @bind-Value="@_readOnly">Read-Only</MudCheckBox>
-        <MudCheckBox @bind-Value="@_dense">Dense</MudCheckBox>
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Client portal</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Client-friendly progress, milestones, and at-risk delivery transparency.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/client-portal" Variant="Variant.Filled" Color="Color.Success">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-        <MudRadioGroup @bind-Value="@_size">
-            <MudStack Spacing="1">
-                <MudRadio Value="Size.Small">Small</MudRadio>
-                <MudRadio Value="Size.Medium">Medium</MudRadio>
-                <MudRadio Value="Size.Large">Large</MudRadio>
-            </MudStack>
-        </MudRadioGroup>
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Reports and exports</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">CSV exports and print/PDF-ready reporting links for internal and client use.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/reports" Variant="Variant.Filled" Color="Color.Info">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Transparency dashboard</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Client and production reporting dashboard for HMLV manufacturing transparency.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/transparency" Variant="Variant.Filled" Color="Color.Success">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-    </MudPaper>
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Basic project plan</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Progress, milestones, and zoom controls for a simple roadmap.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/basic" Variant="Variant.Filled" Color="Color.Primary">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-    <MudPaper Class="pa-5">
-        <MudCheckBox @bind-Value="@_darkMode">Dark mode</MudCheckBox>
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Critical path + baseline</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Baseline comparison, critical path emphasis, and non-working day highlighting.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/critical-path" Variant="Variant.Filled" Color="Color.Error">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-        <MudButton OnClick="AssignColors">Assign task colors</MudButton>
-        <MudButton OnClick="ClearColors">Clear task colors</MudButton>
-    </MudPaper>
-</MudStack>
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Dependencies</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">See task links and sequencing in a delivery pipeline example.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/dependencies" Variant="Variant.Filled" Color="Color.Secondary">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-@code {
-    private Color _color = Color.Primary;
-    private Variant _variant = Variant.Filled;
-    private Size _size = Size.Medium;
-    private bool _readOnly = false;
-    private bool _darkMode = true;
-    private bool _dense = false;
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Scheduler workbench</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Tasks, resources, assignments, and working calendar in one planning experience.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/scheduler" Variant="Variant.Filled" Color="Color.Tertiary">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-    private void MakeTaskBlue(MudGanttTask task)
-    {
-        task.Color = "#1176D3"; // Blue color"
-    }
-    private void DeleteTask(MudGanttTask task)
-    {
-        snackbar.Add("Delete " + task.Name);
-        _tasks = _tasks.Where(x => x.Id != task.Id).ToList();
-    }
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Operations board</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Dense, read-only scheduling for support lanes and shift windows.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/operations" Variant="Variant.Filled" Color="Color.Info">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-    private void OnTaskClicked(MudGanttTask task)
-    {
-        snackbar.Add(task.Name + " clicked");
-    }
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Attendance view</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Employee-style rows with in/out times and hourly zoom.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="attendance" Variant="Variant.Filled" Color="Color.Success">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-    private IReadOnlyList<MudGanttEvent> _events = [
-        new MudGanttEvent { Id = "code-complete", Name = "Code Complete", Date = new DateTimeOffset(2025,6,26,18,0,0,TimeSpan.Zero) },
-        new MudGanttEvent { Id = "general-availability", Name = "GA", Date = new DateTimeOffset(2025,7,3,18,0,0,TimeSpan.Zero) },
-    ];
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Planning calendar</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Heron.MudCalendar example for milestones, planning meetings, and delivery checkpoints.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/calendar" Variant="Variant.Filled" Color="Color.Warning">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-    private IReadOnlyList<MudGanttTask> _tasks = [
-        new MudGanttTask
-        {
-            Id = "implementation-epic",
-            Name = "Gantt chart development",
-            StartDate = new DateTimeOffset(2025,6,24,0,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025,6,26,18,0,0,TimeSpan.Zero),
-            Progress = 0.8
-        },
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Production calendar</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Plant, CNC, and client booking calendar view for production scheduling scenarios.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/calendar-production" Variant="Variant.Filled" Color="Color.Error">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-        new MudGanttTask
-        {
-            Id = "implementation-js",
-            Name = "gantt.js",
-            StartDate = new DateTimeOffset(2025,6,24,8,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025,6,26,16,0,0,TimeSpan.Zero),
-            Progress = 0.85,
-            Links = [new Link("implementation-epic", LinkType.StartToStart), new Link("implementation-epic", LinkType.FinishToFinish)],
-        },
-        new MudGanttTask
-        {
-            Id = "implementation-blazor",
-            Name = "Blazor component",
-            StartDate = new DateTimeOffset(2025,6,25,0,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025,6,26,18,0,0,TimeSpan.Zero),
-            Progress = 0.95,
-            Links = [new Link("implementation-epic", LinkType.StartToStart), new Link("implementation-epic", LinkType.FinishToFinish)],
-        },
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Machine calendars</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Resource-specific calendar view for CNC, laser, and paint booth scheduling.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/calendar-machines" Variant="Variant.Filled" Color="Color.Primary">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-        new MudGanttTask
-        {
-            Id = "unit-tests",
-            Name = "Unit Tests",
-            StartDate = new DateTimeOffset(2025,6,27,9,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025,6,27,10,0,0,TimeSpan.Zero),
-            Links = [new Link("implementation-epic", LinkType.FinishToStart)],
-            Progress = 1.0
-        },
-        new MudGanttTask
-        {
-            Id = "integration-tests",
-            Name = "Integration Tests",
-            StartDate = new DateTimeOffset(2025,6,27,9,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025,6,27,17,0,0,TimeSpan.Zero),
-            Links = [new Link("implementation-epic", LinkType.FinishToStart)],
-            Progress = 0.8
-        },
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Client / job calendar</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Grouped customer jobs with calendar and expandable client summaries.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/calendar-clients" Variant="Variant.Filled" Color="Color.Secondary">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-        new MudGanttTask
-        {
-            Id = "bug-fixes",
-            Name = "Bug fixes",
-            Color = "#0d7694",
-            StartDate = new DateTimeOffset(2025,6,28,0,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025,6,29,16,0,0,TimeSpan.Zero),
-            Progress = 0.35,
-            Links = [new Link("integration-tests", LinkType.FinishToStart), new Link("unit-tests", LinkType.FinishToStart)]
-        },
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Gantt + Calendar sync</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Side-by-side synchronized planning with shared filters across both views.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/gantt-calendar-sync" Variant="Variant.Filled" Color="Color.Tertiary">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-        new MudGanttTask
-        {
-            Id = "release1",
-            Color = "#40B090",
-            Name = "Release nuget package",
-            StartDate = new DateTimeOffset(2025,7,2,0,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025,7,3,0,0,0,TimeSpan.Zero),
-            Links = [new Link("bug-fixes", LinkType.FinishToStart)]
-        }
-    ];
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Resource utilization</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Histogram-style machine utilization dashboard generated from manufacturing jobs.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/resource-utilization" Variant="Variant.Filled" Color="Color.Info">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
 
-    private void ClearColors()
-    {
-        foreach(var task in _tasks)
-        {
-            task.Color = null;
-        }
-    }
-    private void AssignColors()
-    {
-        string[] palette = ["#5f0f40", "#9a031e", "#fb8b24", "#e36414", "#0f4c5c"];
-        int offset = Random.Shared.Next();
-        foreach (var item in _tasks.Index())
-        {
-            item.Item.Color = palette[(offset+item.Index) % palette.Length];
-        }
-    }
-}
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Undo / redo edits</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Editable task chart with working undo and redo history for schedule changes.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/undo-redo" Variant="Variant.Filled" Color="Color.Warning">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">Large dataset</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Generated 1000 and 2500 job manufacturing datasets for scale testing.</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Href="sample/large-dataset" Variant="Variant.Filled" Color="Color.Error">Open</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    </MudStack>
+</MudContainer>

@@ -1,0 +1,37 @@
+@page "/sample/basic"
+@inject ISnackbar Snackbar
+
+<PageTitle>Basic Gantt Example</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <div>
+                <MudText Typo="Typo.h4">Basic project plan</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Starter example with progress, milestones, and zoom controls.</MudText>
+            </div>
+            <GanttZoomControls OnZoomIn="ZoomIn" OnZoomOut="ZoomOut" OnReset="ResetZoom" />
+        </MudStack>
+
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudGanttChart @ref="_chart"
+                           @bind-Tasks="_tasks"
+                           Events="_events"
+                           Color="Color.Primary"
+                           Variant="Variant.Filled"
+                           Size="Size.Medium"
+                           TaskClicked="OnTaskClicked" />
+        </MudPaper>
+    </MudStack>
+</MudContainer>
+
+@code {
+    private MudGanttChart _chart = default!;
+    private IReadOnlyList<MudGanttTask> _tasks = GanttExampleData.CreateProjectTasks();
+    private IReadOnlyList<MudGanttEvent> _events = GanttExampleData.CreateProjectEvents();
+
+    private void OnTaskClicked(MudGanttTask task) => Snackbar.Add($"Selected {task.Name}", Severity.Info);
+    private Task ZoomIn() => _chart.ZoomInAsync();
+    private Task ZoomOut() => _chart.ZoomOutAsync();
+    private Task ResetZoom() => _chart.ResetZoomAsync();
+}

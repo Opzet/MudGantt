@@ -1,0 +1,165 @@
+@page "/sample/manufacturing-flow"
+@using MudGanttDemoApp.Web.ManufacturingApi
+@inject IHttpClientFactory HttpClientFactory
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+
+<PageTitle>Manufacturing Flow</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="3">
+        <DemoPageHeader Title="Client jobs to machine flow"
+                        Description="Top chart shows client jobs. Bottom chart shows machine and worker execution flow for the same filtered client, machine, and selected job."
+                        Icon="@Icons.Material.Filled.PrecisionManufacturing"
+                        TitleTypo="Typo.h4" />
+
+        <ManufacturingFlowToolbar Clients="_clients"
+                                  Machines="_machines"
+                                  Presets="_presets"
+                                  SelectedClient="_selectedClient"
+                                  SelectedClientChanged="OnClientChanged"
+                                  SelectedMachine="_selectedMachine"
+                                  SelectedMachineChanged="OnMachineChanged"
+                                  Search="_search"
+                                  SearchChanged="OnSearchChanged"
+                                  CriticalOnly="_criticalOnly"
+                                  CriticalOnlyChanged="OnCriticalOnlyChanged"
+                                  ConflictsOnly="_conflictsOnly"
+                                  ConflictsOnlyChanged="OnConflictsOnlyChanged"
+                                  DelayedOnly="_delayedOnly"
+                                  DelayedOnlyChanged="OnDelayedOnlyChanged"
+                                  CurrentFiltersPreset="@ManufacturingFlowSupport.CurrentFiltersPreset"
+                                  SelectedPresetName="_selectedPresetName"
+                                  SelectedPresetNameChanged="OnPresetChanged"
+                                  PresetName="_presetName"
+                                  PresetNameChanged="OnPresetNameChanged"
+                                  DisableDeletePreset="DisableDeletePreset"
+                                  OnSavePreset="SavePresetAsync"
+                                  OnDeletePreset="DeletePresetAsync"
+                                  OnZoomIn="ZoomIn"
+                                  OnZoomOut="ZoomOut"
+                                  OnResetZoom="ResetZoom" />
+
+        @if (_dataset is null)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else
+        {
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudPaper Class="pa-3" Elevation="1">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Visible client jobs</MudText>
+                        <MudText Typo="Typo.h4">@FilteredJobs.Count</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudPaper Class="pa-3" Elevation="1">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Critical path jobs</MudText>
+                        <MudText Typo="Typo.h4">@FilteredJobs.Count(x => x.IsCritical)</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudPaper Class="pa-3" Elevation="1">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Avg progress</MudText>
+                        <MudText Typo="Typo.h4">@AverageProgress%</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudPaper Class="pa-3" Elevation="1">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Machine utilization</MudText>
+                        <MudProgressLinear Value="@VisibleMachineUtilization" Color="@ManufacturingFlowSupport.GetUtilizationColor(VisibleMachineUtilization)" Class="my-2" />
+                        <MudText Typo="Typo.h6">@VisibleMachineUtilization%</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudPaper Class="pa-3" Elevation="1">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Conflicts / delayed</MudText>
+                        <MudText Typo="Typo.h4">@FilteredJobs.Count(x => x.HasConflict) / @FilteredJobs.Count(x => x.DelayHours > 0)</MudText>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+
+            <MudPaper Class="pa-4" Elevation="1" Style="height:330px;">
+                <MudText Typo="Typo.h6" Class="mb-2">Client jobs</MudText>
+                <MudGanttChart @ref="_jobsChart"
+                               Tasks="JobTasks"
+                               Events="JobEvents"
+                               RangeOverlays="JobRangeOverlays"
+                               Dense="true"
+                               Size="Size.Small"
+                               ReadOnly="true"
+                               Color="Color.Primary"
+                               Variant="Variant.Outlined"
+                               SelectedTaskId="@_selectedJobId"
+                               HighlightedTaskIds="@SelectedJobHighlightIds"
+                               DimNonHighlighted="true"
+                               TaskClicked="OnJobTaskClicked" />
+            </MudPaper>
+
+            <MudPaper Class="pa-4" Elevation="1" Style="height:330px;">
+                <MudText Typo="Typo.h6" Class="mb-2">Machine / worker execution</MudText>
+                <MudGanttChart @ref="_resourcesChart"
+                               Tasks="MachineTasks"
+                               Events="MachineEvents"
+                               RangeOverlays="MachineRangeOverlays"
+                               Dense="true"
+                               Size="Size.Small"
+                               ReadOnly="true"
+                               Color="Color.Secondary"
+                               Variant="Variant.Outlined"
+                               SelectedTaskId="@_selectedSlotId"
+                               HighlightedTaskIds="@SelectedSlotHighlightIds"
+                               DimNonHighlighted="true"
+                               TaskClicked="OnMachineTaskClicked" />
+            </MudPaper>
+
+            <MudGrid>
+                <MudItem xs="12" lg="8">
+                    <MudPaper Class="pa-0" Elevation="1">
+                        <MudTable Items="FilteredJobs.Take(40)" Dense="true" Hover="true" FixedHeader="true" Height="320px">
+                            <HeaderContent>
+                                <MudTh>Job</MudTh>
+                                <MudTh>Machine</MudTh>
+                                <MudTh>Worker</MudTh>
+                                <MudTh>Progress</MudTh>
+                                <MudTh>Critical</MudTh>
+                                <MudTh>Delay</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTr Class="@(context.Id == _selectedJobId ? "selected-flow-row" : null)" @onclick="() => SelectJob(context)">
+                                    <MudTd DataLabel="Job">@context.Name</MudTd>
+                                    <MudTd DataLabel="Machine">@context.Machine</MudTd>
+                                    <MudTd DataLabel="Worker">@context.Worker</MudTd>
+                                    <MudTd DataLabel="Progress">
+                                        <MudProgressLinear Value="@(context.Progress * 100)" Color="@(context.IsCritical ? Color.Error : Color.Info)" Class="mb-1" />
+                                        @context.Progress.ToString("P0")
+                                    </MudTd>
+                                    <MudTd DataLabel="Critical">
+                                        @if (context.IsCritical)
+                                        {
+                                            <MudChip T="string" Color="Color.Error" Size="Size.Small">Critical</MudChip>
+                                        }
+                                        @if (context.HasConflict)
+                                        {
+                                            <MudChip T="string" Color="Color.Warning" Size="Size.Small" Class="ml-1">Conflict</MudChip>
+                                        }
+                                    </MudTd>
+                                    <MudTd DataLabel="Delay">@context.DelayHours h</MudTd>
+                                </MudTr>
+                            </RowTemplate>
+                        </MudTable>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" lg="4">
+                    <ManufacturingFlowDetailsPanel SelectedJob="SelectedJob"
+                                                   ConflictSuggestions="ConflictSuggestions"
+                                                   WhatIfOverride="WhatIfOverride"
+                                                   DependencyTraceJobs="DependencyTraceJobs"
+                                                   OnPreviewSuggestion="PreviewSuggestion"
+                                                   OnClearWhatIf="ClearWhatIf" />
+                </MudItem>
+            </MudGrid>
+        }
+    </MudStack>
+</MudContainer>

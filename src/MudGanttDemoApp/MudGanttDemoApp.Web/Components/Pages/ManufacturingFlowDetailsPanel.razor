@@ -1,0 +1,73 @@
+@using MudGanttDemoApp.Web.ManufacturingApi
+
+<MudPaper Class="pa-4 cockpit-detail-pane" Elevation="1">
+    @if (SelectedJob is not null)
+    {
+        <MudText Typo="Typo.h6">@SelectedJob.Name</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">@SelectedJob.Client · @SelectedJob.Machine · @SelectedJob.Worker</MudText>
+        <MudDivider Class="my-2" />
+        <MudText Typo="Typo.body2">Schedule: @SelectedJob.StartDate.ToString("dd MMM HH:mm") - @SelectedJob.EndDate.ToString("dd MMM HH:mm")</MudText>
+        <MudText Typo="Typo.body2">Baseline: @SelectedJob.BaselineStartDate.ToString("dd MMM HH:mm") - @SelectedJob.BaselineEndDate.ToString("dd MMM HH:mm")</MudText>
+        <MudText Typo="Typo.body2">Progress: @SelectedJob.Progress.ToString("P0")</MudText>
+        <MudText Typo="Typo.body2">Critical path: @(SelectedJob.IsCritical ? "Yes" : "No")</MudText>
+        <MudText Typo="Typo.body2">Delay: @SelectedJob.DelayHours h</MudText>
+        <MudStack Row="true" Spacing="1" Class="mt-2">
+            @if (SelectedJob.IsCritical)
+            {
+                <MudChip T="string" Color="Color.Error" Size="Size.Small">Critical path</MudChip>
+            }
+            @if (SelectedJob.HasConflict)
+            {
+                <MudChip T="string" Color="Color.Warning" Size="Size.Small">Machine conflict</MudChip>
+            }
+            @if (SelectedJob.DelayHours > 0)
+            {
+                <MudChip T="string" Color="Color.Info" Size="Size.Small">Delayed vs baseline</MudChip>
+            }
+        </MudStack>
+        <MudDivider Class="my-3" />
+        <MudText Typo="Typo.subtitle2" Class="mb-2">Conflict resolution suggestions</MudText>
+        @foreach (var suggestion in ConflictSuggestions)
+        {
+            <MudPaper Class="pa-2 mb-2" Elevation="0">
+                <MudText Typo="Typo.body2">@suggestion.Title</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">@suggestion.Detail</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Info">@suggestion.Impact</MudText>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" OnClick="() => OnPreviewSuggestion.InvokeAsync(suggestion)">Preview what-if</MudButton>
+            </MudPaper>
+        }
+
+        @if (WhatIfOverride is not null)
+        {
+            <MudDivider Class="my-3" />
+            <MudText Typo="Typo.subtitle2" Class="mb-2">What-if preview</MudText>
+            <MudText Typo="Typo.body2">@WhatIfOverride.Machine · @WhatIfOverride.Worker</MudText>
+            <MudText Typo="Typo.body2">@WhatIfOverride.StartDate.ToString("dd MMM HH:mm") - @WhatIfOverride.EndDate.ToString("dd MMM HH:mm")</MudText>
+            <MudText Typo="Typo.body2">Delay impact: @WhatIfOverride.DelayHours h</MudText>
+            <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" OnClick="OnClearWhatIf">Clear preview</MudButton>
+        }
+
+        <MudDivider Class="my-3" />
+        <MudText Typo="Typo.subtitle2" Class="mb-2">Dependency trace</MudText>
+        @foreach (var dependency in DependencyTraceJobs)
+        {
+            <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mb-1">
+                <MudText Typo="Typo.body2">@dependency.Name</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">@dependency.Machine</MudText>
+            </MudStack>
+        }
+    }
+    else
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Select a job in the chart or table to highlight linked tasks, machine execution, and scroll it into view.</MudText>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public ManufacturingJobDto? SelectedJob { get; set; }
+    [Parameter, EditorRequired] public IReadOnlyList<ManufacturingConflictSuggestion> ConflictSuggestions { get; set; } = [];
+    [Parameter] public ManufacturingSimulationOverride? WhatIfOverride { get; set; }
+    [Parameter, EditorRequired] public IReadOnlyList<ManufacturingJobDto> DependencyTraceJobs { get; set; } = [];
+    [Parameter] public EventCallback<ManufacturingConflictSuggestion> OnPreviewSuggestion { get; set; }
+    [Parameter] public EventCallback OnClearWhatIf { get; set; }
+}

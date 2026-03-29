@@ -1,0 +1,129 @@
+@page "/sample/large-dataset"
+@using MudGanttDemoApp.Web.ManufacturingApi
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Large Dataset Demo</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+            <div>
+                <MudText Typo="Typo.h4">Large dataset demo</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Generated manufacturing dataset for 1000+ and 2500 jobs across clients, machines, and workers.</MudText>
+            </div>
+            <MudStack Row="true" Spacing="1">
+                <MudButton Variant="@(_jobCount == 1000 ? Variant.Filled : Variant.Outlined)" OnClick="() => LoadAsync(1000)">1000 jobs</MudButton>
+                <MudButton Variant="@(_jobCount == 2500 ? Variant.Filled : Variant.Outlined)" OnClick="() => LoadAsync(2500)">2500 jobs</MudButton>
+            </MudStack>
+        </MudStack>
+
+        <MudStack Row="true" Spacing="2" Wrap="Wrap.Wrap">
+            <MudSelect T="string" Label="Client" Value="@_selectedClient" ValueChanged="OnClientChanged" Style="min-width:220px">
+                <MudSelectItem T="string" Value="@AllClients">All clients</MudSelectItem>
+                @foreach (var client in _dataset?.Clients ?? [])
+                {
+                    <MudSelectItem T="string" Value="@client">@client</MudSelectItem>
+                }
+            </MudSelect>
+            <MudTextField @bind-Value="_search" Placeholder="Search jobs" Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Style="min-width:240px" />
+            <MudCheckBox @bind-Value="_criticalOnly" Label="Critical only" Color="Color.Error" Dense="true" />
+            <MudCheckBox @bind-Value="_conflictOnly" Label="Conflicts" Color="Color.Warning" Dense="true" />
+        </MudStack>
+
+        @if (_dataset is null)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else
+        {
+            <MudGrid>
+                <MudItem xs="12" md="3"><MudPaper Class="pa-3" Elevation="1"><MudText Typo="Typo.subtitle2">Jobs</MudText><MudText Typo="Typo.h4">@FilteredJobs.Count</MudText></MudPaper></MudItem>
+                <MudItem xs="12" md="3"><MudPaper Class="pa-3" Elevation="1"><MudText Typo="Typo.subtitle2">Clients</MudText><MudText Typo="Typo.h4">@_dataset.Clients.Count</MudText></MudPaper></MudItem>
+                <MudItem xs="12" md="3"><MudPaper Class="pa-3" Elevation="1"><MudText Typo="Typo.subtitle2">Machine slots</MudText><MudText Typo="Typo.h4">@FilteredSlots.Count</MudText></MudPaper></MudItem>
+                <MudItem xs="12" md="3"><MudPaper Class="pa-3" Elevation="1"><MudText Typo="Typo.subtitle2">Critical jobs</MudText><MudText Typo="Typo.h4">@FilteredJobs.Count(x => x.IsCritical)</MudText></MudPaper></MudItem>
+                <MudItem xs="12" md="3"><MudPaper Class="pa-3" Elevation="1"><MudText Typo="Typo.subtitle2">Conflicts</MudText><MudText Typo="Typo.h4">@FilteredJobs.Count(x => x.HasConflict)</MudText></MudPaper></MudItem>
+            </MudGrid>
+
+            <MudPaper Class="pa-4" Elevation="1" Style="height:520px;">
+                <MudGanttChart Tasks="ChartTasks"
+                               Events="_dataset.Holidays"
+                               Dense="true"
+                               Size="Size.Small"
+                               ReadOnly="true"
+                               Color="Color.Info"
+                               Variant="Variant.Outlined"
+                               SelectedTaskId="@_selectedJobId"
+                               HighlightedTaskIds="@SelectedHighlightIds"
+                               DimNonHighlighted="true"
+                               TaskClicked="OnTaskClicked" />
+            </MudPaper>
+
+            <MudPaper Class="pa-4" Elevation="1">
+                <Virtualize Items="FilteredJobs.Take(250).ToList()" Context="job">
+                    <div class="pa-2 @(job.Id == _selectedJobId ? "selected-flow-row" : string.Empty)" style="border-bottom:1px solid var(--mud-palette-divider); cursor:pointer;" @onclick="() => _selectedJobId = job.Id">
+                        <strong>@job.Name</strong> · @job.Client · @job.Machine / @job.Worker · @job.Progress.ToString("P0")
+                        @if (job.HasConflict)
+                        {
+                            <span style="color:var(--mud-palette-warning); margin-left:8px;">Conflict</span>
+                        }
+                    </div>
+                </Virtualize>
+            </MudPaper>
+        }
+    </MudStack>
+</MudContainer>
+
+@code {
+    private HttpClient _http = default!;
+    private ManufacturingDatasetDto? _dataset;
+    private int _jobCount = 2500;
+    private string _search = string.Empty;
+    private string _selectedClient = AllClients;
+    private string? _selectedJobId;
+    private bool _criticalOnly;
+    private bool _conflictOnly;
+    private const string AllClients = ManufacturingQueries.AllClients;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _http = HttpClientFactory.CreateClient();
+        _http.BaseAddress = new Uri(NavigationManager.BaseUri);
+        await LoadAsync(_jobCount);
+    }
+
+    private ManufacturingFilterState FilterState => new()
+    {
+        Client = _selectedClient,
+        Machine = ManufacturingQueries.AllMachines,
+        Search = _search,
+        CriticalOnly = _criticalOnly,
+        ConflictsOnly = _conflictOnly,
+        DelayedOnly = false
+    };
+
+    private IReadOnlyList<ManufacturingJobDto> FilteredJobs => ManufacturingQueries.FilterJobs(_dataset?.Jobs ?? [], FilterState);
+    private IReadOnlyList<ManufacturingMachineSlotDto> FilteredSlots => ManufacturingQueries.FilterSlots(_dataset?.MachineSlots ?? [], FilterState);
+    private IReadOnlyList<string> SelectedHighlightIds => string.IsNullOrWhiteSpace(_selectedJobId) ? [] : GanttTaskAnalysis.BuildDependencyChain(ChartTasks, _selectedJobId);
+
+    private IReadOnlyList<MudGanttTask> ChartTasks => FilteredJobs.Select(ManufacturingTaskMapper.ToClientJobTask).ToList() ?? [];
+
+    private async Task LoadAsync(int jobCount)
+    {
+        _jobCount = jobCount;
+        _dataset = await _http.GetFromJsonAsync<ManufacturingDatasetDto>($"api/manufacturing/dataset?jobs={jobCount}");
+        _selectedJobId = FilteredJobs.FirstOrDefault()?.Id;
+    }
+
+    private void OnClientChanged(string client)
+    {
+        _selectedClient = client;
+        _selectedJobId = FilteredJobs.FirstOrDefault()?.Id;
+    }
+
+    private Task OnTaskClicked(MudGanttTask task)
+    {
+        _selectedJobId = task.Id;
+        return Task.CompletedTask;
+    }
+}

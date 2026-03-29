@@ -1,0 +1,90 @@
+@using MudGantt
+
+@if (Task is not null)
+{
+    <MudPaper Class="pa-4 mt-4" Elevation="2">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Info" Class="mr-2" />
+                Task Details
+            </MudText>
+            <MudStack Row="true" Spacing="1">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Success"
+                           Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           OnClick="OnSave"
+                           Disabled="@(ReadOnly || IsBusy)">
+                    Save
+                </MudButton>
+                <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="OnClose" />
+            </MudStack>
+        </MudStack>
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="Task.Name" Label="Task Name" Variant="Variant.Outlined" ReadOnly="ReadOnly" Immediate="true" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField Value="@HomePageSupport.FormatStartDate(Task)" Label="Start Date" Variant="Variant.Outlined" ReadOnly="true" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField Value="@HomePageSupport.FormatEndDate(Task)" Label="End Date" Variant="Variant.Outlined" ReadOnly="true" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Progress: @HomePageSupport.FormatProgress(Task)</MudText>
+                <MudProgressLinear Color="@HomePageSupport.GetProgressColor(Task)" Value="@((Task.Progress ?? 0) * 100)" Size="Size.Medium" Class="mb-2" />
+                <MudText Typo="Typo.body2">@HomePageSupport.FormatProgress(Task)</MudText>
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField Value="@HomePageSupport.GetDuration(Task)"
+                              Label="Duration (Days)"
+                              Variant="Variant.Outlined"
+                              ReadOnly="true"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@Icons.Material.Filled.CalendarToday" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudColorPicker @bind-Text="Task.Color"
+                                Label="Task Color"
+                                Variant="Variant.Outlined"
+                                DisableToolbar="false"
+                                Disabled="ReadOnly"
+                                Placeholder="Default color" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Link" Size="Size.Small" Class="mr-1" />
+                    Dependencies: @(Task.Links?.Length ?? 0) links
+                </MudText>
+                @if (Task.Links?.Length > 0)
+                {
+                    <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                        @foreach (var link in Task.Links)
+                        {
+                            var linkedTask = Tasks.FirstOrDefault(t => t.Id == link.Id);
+                            <MudPaper Class="pa-2" Elevation="1">
+                                <MudText Typo="Typo.body2" Color="Color.Info">
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" />
+                                    @linkedTask?.Name → @link.LinkType
+                                </MudText>
+                            </MudPaper>
+                        }
+                    </MudStack>
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">No dependencies</MudText>
+                }
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+}
+
+@code {
+    [Parameter] public MudGanttTask? Task { get; set; }
+    [Parameter, EditorRequired] public IReadOnlyList<MudGanttTask> Tasks { get; set; } = [];
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+}

@@ -1,0 +1,185 @@
+@page "/sample/scheduler"
+@using MudGanttDemoApp.Web.SchedulerApi
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Scheduler Workbench</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+            <div>
+                <MudText Typo="Typo.h4">Scheduler workbench</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Working demo with tasks, resources, assignments, shared calendar, and a planning timeline.</MudText>
+            </div>
+            <MudStack Row="true" Spacing="1">
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Sync" OnClick="LoadProjectAsync">Reload</MudButton>
+                <MudButtonGroup Variant="Variant.Outlined" Color="Color.Primary">
+                    <MudButton StartIcon="@Icons.Material.Filled.ZoomIn" OnClick="ZoomIn">Zoom In</MudButton>
+                    <MudButton StartIcon="@Icons.Material.Filled.ZoomOut" OnClick="ZoomOut">Zoom Out</MudButton>
+                    <MudButton StartIcon="@Icons.Material.Filled.FitScreen" OnClick="ResetZoom">Reset</MudButton>
+                </MudButtonGroup>
+            </MudStack>
+        </MudStack>
+
+        @if (_project is null)
+        {
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        }
+        else
+        {
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudPaper Class="pa-3" Elevation="1">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Tasks</MudText>
+                        <MudText Typo="Typo.h4">@_project.Tasks.Count</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudPaper Class="pa-3" Elevation="1">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Resources</MudText>
+                        <MudText Typo="Typo.h4">@_project.Resources.Count</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudPaper Class="pa-3" Elevation="1">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Assignments</MudText>
+                        <MudText Typo="Typo.h4">@_project.Assignments.Count</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudPaper Class="pa-3" Elevation="1">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Phases</MudText>
+                        <MudText Typo="Typo.h4">@_project.Tasks.Select(x => x.Phase).Distinct().Count()</MudText>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.h6">@_project.Name</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">@_project.Description</MudText>
+                <MudGanttChart @ref="_chart"
+                               Tasks="_chartTasks"
+                               Events="_events"
+                               Color="Color.Primary"
+                               Variant="Variant.Outlined"
+                               Size="Size.Small"
+                               Dense="true"
+                               ReadOnly="true" />
+            </MudPaper>
+
+            <MudGrid>
+                <MudItem xs="12" lg="5">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.h6" Class="mb-2">Task backlog</MudText>
+                        <MudTable Items="_project.Tasks" Dense="true" Hover="true">
+                            <HeaderContent>
+                                <MudTh>Task</MudTh>
+                                <MudTh>Phase</MudTh>
+                                <MudTh>Effort</MudTh>
+                                <MudTh>Resources</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Task">@context.Name</MudTd>
+                                <MudTd DataLabel="Phase">@context.Phase</MudTd>
+                                <MudTd DataLabel="Effort">@context.EffortHours h</MudTd>
+                                <MudTd DataLabel="Resources">@GetResourceSummary(context.Id)</MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" lg="4">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.h6" Class="mb-2">Resources</MudText>
+                        <MudStack Spacing="1">
+                            @foreach (var resource in _project.Resources)
+                            {
+                                <MudPaper Class="pa-2" Elevation="0">
+                                    <MudText Typo="Typo.body2">@resource.Name</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@resource.Role · @resource.CapacityHoursPerDay h/day</MudText>
+                                </MudPaper>
+                            }
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" lg="3">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.h6" Class="mb-2">Working calendar</MudText>
+                        <MudStack Spacing="1">
+                            @foreach (var day in _project.Calendar)
+                            {
+                                <MudPaper Class="pa-2" Elevation="0">
+                                    <MudText Typo="Typo.body2">@day.Day</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@day.WorkingHours</MudText>
+                                </MudPaper>
+                            }
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        }
+    </MudStack>
+</MudContainer>
+
+@code {
+    private MudGanttChart _chart = default!;
+    private HttpClient _http = default!;
+    private SchedulerProjectDto? _project;
+    private IReadOnlyList<MudGanttTask> _chartTasks = [];
+    private IReadOnlyList<MudGanttEvent> _events = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _http = HttpClientFactory.CreateClient();
+        _http.BaseAddress = new Uri(NavigationManager.BaseUri);
+        await LoadProjectAsync();
+    }
+
+    private async Task LoadProjectAsync()
+    {
+        var project = await _http.GetFromJsonAsync<SchedulerProjectDto>("api/scheduler/project");
+        if (project is null)
+        {
+            Snackbar.Add("Unable to load scheduler project.", Severity.Error);
+            return;
+        }
+
+        _project = project;
+        _chartTasks = project.Tasks.Select(task => new MudGanttTask
+        {
+            Id = task.Id,
+            Name = task.Name,
+            StartDate = task.StartDate,
+            EndDate = task.EndDate,
+            Progress = task.Progress,
+            Color = task.Color,
+            Links = task.Links.Select(link => new Link(link.Id, link.LinkType)).ToArray()
+        }).ToList();
+
+        _events =
+        [
+            new MudGanttEvent { Id = "phase-gate", Name = "Phase Gate", Date = project.Tasks[2].EndDate ?? DateTimeOffset.UtcNow },
+            new MudGanttEvent { Id = "release", Name = "Go Live", Date = project.Tasks[^1].StartDate ?? DateTimeOffset.UtcNow }
+        ];
+    }
+
+    private string GetResourceSummary(string taskId)
+    {
+        if (_project is null)
+        {
+            return string.Empty;
+        }
+
+        var names = _project.Assignments
+            .Where(x => x.TaskId == taskId)
+            .Join(_project.Resources, assignment => assignment.ResourceId, resource => resource.Id, (assignment, resource) => $"{resource.Name} ({assignment.AllocationPercent}%)")
+            .ToList();
+
+        return names.Count == 0 ? "Unassigned" : string.Join(", ", names);
+    }
+
+    private Task ZoomIn() => _chart.ZoomInAsync(25);
+    private Task ZoomOut() => _chart.ZoomOutAsync(25);
+    private Task ResetZoom() => _chart.ResetZoomAsync();
+}

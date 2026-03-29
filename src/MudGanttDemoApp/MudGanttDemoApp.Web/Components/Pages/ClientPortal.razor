@@ -1,0 +1,114 @@
+@page "/sample/client-portal"
+@using MudGanttDemoApp.Web.ManufacturingApi
+@inject IHttpClientFactory HttpClientFactory
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+
+<PageTitle>Client Portal</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+            <div>
+                <MudText Typo="Typo.h4">Client portal summary</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Client-facing transparency view with delivery status, risks, and milestone visibility.</MudText>
+            </div>
+            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+                <MudSelect T="string" Label="Client" Value="@_selectedClient" ValueChanged="OnClientChanged" Style="min-width:260px">
+                    @foreach (var client in _dataset?.Clients ?? [])
+                    {
+                        <MudSelectItem T="string" Value="@client">@client</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Print" OnClick="PrintAsync">Print / PDF</MudButton>
+            </MudStack>
+        </MudStack>
+
+        @if (_dataset is null)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else
+        {
+            <MudGrid>
+                <MudItem xs="12" md="3"><MudPaper Class="pa-3" Elevation="1"><MudText Typo="Typo.subtitle2">Jobs</MudText><MudText Typo="Typo.h4">@ClientJobs.Count</MudText></MudPaper></MudItem>
+                <MudItem xs="12" md="3"><MudPaper Class="pa-3" Elevation="1"><MudText Typo="Typo.subtitle2">Progress</MudText><MudText Typo="Typo.h4">@ClientProgress%</MudText></MudPaper></MudItem>
+                <MudItem xs="12" md="3"><MudPaper Class="pa-3" Elevation="1"><MudText Typo="Typo.subtitle2">At risk</MudText><MudText Typo="Typo.h4">@ClientJobs.Count(x => x.HasConflict || x.DelayHours > 0)</MudText></MudPaper></MudItem>
+                <MudItem xs="12" md="3"><MudPaper Class="pa-3" Elevation="1"><MudText Typo="Typo.subtitle2">Critical path</MudText><MudText Typo="Typo.h4">@ClientJobs.Count(x => x.IsCritical)</MudText></MudPaper></MudItem>
+            </MudGrid>
+
+            <MudPaper Class="pa-4" Elevation="1" Style="height:340px;">
+                <MudGanttChart Tasks="ClientTasks"
+                               Events="_dataset.Holidays"
+                               Dense="true"
+                               Size="Size.Small"
+                               ReadOnly="true"
+                               Color="Color.Success"
+                               Variant="Variant.Outlined" />
+            </MudPaper>
+
+            <MudGrid>
+                <MudItem xs="12" lg="7">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.h6" Class="mb-2">Delivery detail</MudText>
+                        <MudSimpleTable>
+                            <thead>
+                                <tr>
+                                    <th>Job</th>
+                                    <th>Machine</th>
+                                    <th>Progress</th>
+                                    <th>Delay</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var job in ClientJobs.Take(20))
+                                {
+                                    <tr>
+                                        <td>@job.Name</td>
+                                        <td>@job.Machine</td>
+                                        <td>@job.Progress.ToString("P0")</td>
+                                        <td>@job.DelayHours h</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" lg="5">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.h6" Class="mb-2">Upcoming windows</MudText>
+                        @foreach (var holiday in _dataset.Holidays)
+                        {
+                            <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mb-2">
+                                <MudText Typo="Typo.body2">@holiday.Name</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@holiday.Date.ToString("dd MMM HH:mm")</MudText>
+                            </MudStack>
+                        }
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        }
+    </MudStack>
+</MudContainer>
+
+@code {
+    private HttpClient _http = default!;
+    private ManufacturingDatasetDto? _dataset;
+    [SupplyParameterFromQuery] private string? Client { get; set; }
+    private string _selectedClient = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _http = HttpClientFactory.CreateClient();
+        _http.BaseAddress = new Uri(NavigationManager.BaseUri);
+        _dataset = await _http.GetFromJsonAsync<ManufacturingDatasetDto>("api/manufacturing/dataset?jobs=400");
+        _selectedClient = !string.IsNullOrWhiteSpace(Client) ? Client : _dataset?.Clients.FirstOrDefault() ?? string.Empty;
+    }
+
+    private IReadOnlyList<ManufacturingJobDto> ClientJobs => _dataset?.Jobs.Where(x => x.Client == _selectedClient).OrderBy(x => x.StartDate).ToList() ?? [];
+    private string ClientProgress => (ClientJobs.Count == 0 ? 0 : ClientJobs.Average(x => x.Progress) * 100).ToString("0.0");
+    private IReadOnlyList<MudGanttTask> ClientTasks => ClientJobs.Select(ManufacturingTaskMapper.ToClientPortalTask).ToList();
+
+    private void OnClientChanged(string client) => _selectedClient = client;
+    private async Task PrintAsync() => await JS.InvokeVoidAsync("print");
+}

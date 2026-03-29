@@ -1,0 +1,110 @@
+@page "/sample/reports"
+@using MudGanttDemoApp.Web.ManufacturingApi
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<PageTitle>Manufacturing Reports</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+            <div>
+                <MudText Typo="Typo.h4">Export and reporting</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">CSV exports and print-ready reporting for clients, manufacturing, and internal review.</MudText>
+            </div>
+            <MudSelect T="string" Label="Client" Value="@_selectedClient" ValueChanged="OnClientChanged" Style="min-width:260px">
+                <MudSelectItem T="string" Value="@AllClients">All clients</MudSelectItem>
+                @foreach (var client in _dataset?.Clients ?? [])
+                {
+                    <MudSelectItem T="string" Value="@client">@client</MudSelectItem>
+                }
+            </MudSelect>
+        </MudStack>
+
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudText Typo="Typo.h6">Job report</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Detailed job schedule, progress, delay, and conflict export.</MudText>
+                    <MudButton Href="@JobsCsvUrl" Variant="Variant.Filled" Color="Color.Primary" Class="mt-3">Download CSV</MudButton>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudText Typo="Typo.h6">Resource report</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Machine utilization, overload, and conflict export.</MudText>
+                    <MudButton Href="@ResourcesCsvUrl" Variant="Variant.Filled" Color="Color.Info" Class="mt-3">Download CSV</MudButton>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudText Typo="Typo.h6">Portal / PDF-ready</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Open client portal summary then print to PDF from the browser.</MudText>
+                    <MudStack Row="true" Spacing="1" Class="mt-3">
+                        <MudButton Href="@PortalUrl" Variant="Variant.Filled" Color="Color.Success">Open portal</MudButton>
+                        <MudButton Variant="Variant.Outlined" OnClick="PrintAsync">Print page</MudButton>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        @if (_dataset is not null)
+        {
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.h6" Class="mb-2">Report preview</MudText>
+                <MudSimpleTable>
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Jobs</th>
+                            <th>Critical</th>
+                            <th>Conflicts</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var client in _dataset.Clients)
+                        {
+                            var jobs = _dataset.Jobs.Where(x => x.Client == client).ToList();
+                            <tr>
+                                <td>@client</td>
+                                <td>@jobs.Count</td>
+                                <td>@jobs.Count(x => x.IsCritical)</td>
+                                <td>@jobs.Count(x => x.HasConflict)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            </MudPaper>
+        }
+    </MudStack>
+</MudContainer>
+
+@code {
+    private const string AllClients = "All clients";
+    private HttpClient _http = default!;
+    private ManufacturingDatasetDto? _dataset;
+    private string _selectedClient = AllClients;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _http = HttpClientFactory.CreateClient();
+        _http.BaseAddress = new Uri(NavigationManager.BaseUri);
+        _dataset = await _http.GetFromJsonAsync<ManufacturingDatasetDto>("api/manufacturing/dataset?jobs=500");
+    }
+
+    private string JobsCsvUrl => string.IsNullOrWhiteSpace(_selectedClient) || _selectedClient == AllClients
+        ? "api/manufacturing/reports/jobs.csv"
+        : $"api/manufacturing/reports/jobs.csv?client={Uri.EscapeDataString(_selectedClient)}";
+
+    private string ResourcesCsvUrl => string.IsNullOrWhiteSpace(_selectedClient) || _selectedClient == AllClients
+        ? "api/manufacturing/reports/resources.csv"
+        : $"api/manufacturing/reports/resources.csv?client={Uri.EscapeDataString(_selectedClient)}";
+
+    private string PortalUrl => string.IsNullOrWhiteSpace(_selectedClient) || _selectedClient == AllClients
+        ? "sample/client-portal"
+        : $"sample/client-portal?client={Uri.EscapeDataString(_selectedClient)}";
+
+    private void OnClientChanged(string client) => _selectedClient = client;
+    private async Task PrintAsync() => await JS.InvokeVoidAsync("print");
+}

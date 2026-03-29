@@ -1,0 +1,53 @@
+@page "/sample/calendar"
+
+<PageTitle>Calendar Planning Example</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="3">
+        <div>
+            <MudText Typo="Typo.h4">Planning calendar</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Month-style planning surface for customer milestones, procurement, installs, and reviews.</MudText>
+        </div>
+
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudCalendar T="CalendarExampleItem" Items="_items" />
+        </MudPaper>
+
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudText Typo="Typo.h6" Class="mb-2">Upcoming milestones</MudText>
+            <MudSimpleTable>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Activity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in _items.OrderBy(x => x.Start).Take(8))
+                    {
+                        <tr>
+                            <td>@item.Start.ToString("dd MMM yyyy HH:mm")</td>
+                            <td>@item.Text</td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        </MudPaper>
+    </MudStack>
+</MudContainer>
+
+@code {
+    private readonly IReadOnlyList<CalendarExampleItem> _items =
+    [
+        new CalendarExampleItem { Start = new DateTime(2025, 10, 1, 9, 0, 0), Text = "Client A kickoff" },
+        new CalendarExampleItem { Start = new DateTime(2025, 10, 3, 13, 0, 0), Text = "Steel delivery" },
+        new CalendarExampleItem { Start = new DateTime(2025, 10, 4, 8, 0, 0), Text = "Machine calibration" },
+        new CalendarExampleItem { Start = new DateTime(2025, 10, 7, 15, 30, 0), Text = "Customer design signoff" },
+        new CalendarExampleItem { Start = new DateTime(2025, 10, 9, 7, 30, 0), Text = "Factory maintenance window" },
+        new CalendarExampleItem { Start = new DateTime(2025, 10, 11, 10, 0, 0), Text = "Client B FAT" },
+        new CalendarExampleItem { Start = new DateTime(2025, 10, 14, 14, 0, 0), Text = "Procurement review" },
+        new CalendarExampleItem { Start = new DateTime(2025, 10, 18, 9, 0, 0), Text = "Line 2 installation" },
+        new CalendarExampleItem { Start = new DateTime(2025, 10, 22, 11, 0, 0), Text = "CNC run approval" },
+        new CalendarExampleItem { Start = new DateTime(2025, 10, 27, 16, 0, 0), Text = "Executive schedule review" }
+    ];
+}

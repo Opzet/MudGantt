@@ -1,0 +1,133 @@
+@page "/roster/advanced"
+@using MudGanttDemoApp.Web.SchedulerApi
+@inject ISchedulerProjectStore SchedulerProjectStore
+@inject ISnackbar Snackbar
+
+<PageTitle>Advanced Roster Planner</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="3">
+        <DemoPageHeader Title="Advanced roster planner"
+                        Description="Resource rotation planning using the current scheduler resource model, rotation templates, and previewed shift allocations."
+                        Icon="@Icons.Material.Filled.Groups3">
+            <Actions>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Href="sample">Back to examples</MudButton>
+            </Actions>
+        </DemoPageHeader>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudDatePicker @bind-Date="_cycleStartDate" Label="Cycle start" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudNumericField T="int" @bind-Value="_horizonDays" Label="Horizon (days)" Min="7" Max="35" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudSelect T="RotationTemplate" @bind-Value="_rotationTemplate" Label="Rotation template" @bind-Value:after="RebuildPreview">
+                        @foreach (var template in Enum.GetValues<RotationTemplate>())
+                        {
+                            <MudSelectItem T="RotationTemplate" Value="@template">@GetTemplateLabel(template)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudSelect T="string" @bind-Value="_selectedRole" Label="Role filter" @bind-Value:after="RebuildPreview">
+                        <MudSelectItem T="string" Value="@RosterAdvancedSupport.AllRoles">All roles</MudSelectItem>
+                        @foreach (var role in AvailableRoles)
+                        {
+                            <MudSelectItem T="string" Value="@role">@role</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSelect T="string" MultiSelection="true" SelectedValues="_selectedResourceIds" SelectedValuesChanged="OnResourcesChanged" Label="Resources in rotation">
+                        @foreach (var resource in FilteredResources)
+                        {
+                            <MudSelectItem T="string" Value="@resource.Id">@resource.Name (@resource.Role)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+
+            <MudStack Row="true" Spacing="1" Class="mt-3">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="RebuildPreview">Preview</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ApplyRotationAsync">Apply to demo board</MudButton>
+            </MudStack>
+        </MudPaper>
+
+        <MudGrid>
+            <MudItem xs="12" sm="4"><MetricSummaryCard Label="Resources" Value="@_selectedResourceIds.Count.ToString()" /></MudItem>
+            <MudItem xs="12" sm="4"><MetricSummaryCard Label="Preview shifts" Value="@PreviewTasks.Count.ToString()" /></MudItem>
+            <MudItem xs="12" sm="4"><MetricSummaryCard Label="Preview hours" Value="@PreviewHours" /></MudItem>
+        </MudGrid>
+
+        @if (PreviewTasks.Count > 0)
+        {
+            <MudPaper Elevation="1" Class="pa-4" Style="height:360px;">
+                <MudText Typo="Typo.h6" Class="mb-2">Roster preview timeline</MudText>
+                <MudGanttChart Tasks="PreviewTasks"
+                               Dense="true"
+                               Size="Size.Small"
+                               ReadOnly="true"
+                               Color="Color.Info"
+                               Variant="Variant.Outlined" />
+            </MudPaper>
+        }
+
+        @if (_previewDays.Count > 0 && _selectedResourceIds.Count > 0)
+        {
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-2">Rotation preview</MudText>
+                <MudTable Items="PreviewRows" Dense="true" Hover="true" Breakpoint="Breakpoint.None">
+                    <HeaderContent>
+                        <MudTh>Resource</MudTh>
+                        @foreach (var day in _previewDays)
+                        {
+                            <MudTh>@day.Date.ToString("dd MMM")</MudTh>
+                        }
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.ResourceName</MudTd>
+                        @foreach (var day in _previewDays)
+                        {
+                            var cell = context.Cells.First(c => c.Date == day.Date);
+                            <MudTd>
+                                <MudChip T="string" Color="@cell.Color" Size="Size.Small">@cell.ShiftCode</MudChip>
+                            </MudTd>
+                        }
+                    </RowTemplate>
+                </MudTable>
+            </MudPaper>
+        }
+
+        @if (_appliedAssignments.Count > 0)
+        {
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-2">Applied demo roster assignments</MudText>
+                <MudSimpleTable>
+                    <thead>
+                        <tr>
+                            <th>Resource</th>
+                            <th>Shift</th>
+                            <th>Start</th>
+                            <th>End</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _appliedAssignments.Take(20))
+                        {
+                            <tr>
+                                <td>@item.Name</td>
+                                <td>@item.RightLabel</td>
+                                <td>@item.StartDate?.ToString("dd MMM HH:mm")</td>
+                                <td>@item.EndDate?.ToString("dd MMM HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            </MudPaper>
+        }
+    </MudStack>
+</MudContainer>
+

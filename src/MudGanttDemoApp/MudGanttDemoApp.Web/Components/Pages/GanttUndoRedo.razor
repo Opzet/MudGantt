@@ -1,0 +1,97 @@
+@page "/sample/undo-redo"
+@inject ISnackbar Snackbar
+
+<PageTitle>Undo / Redo Example</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+            <div>
+                <MudText Typo="Typo.h4">Undo / redo task edits</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Editable chart with task move/progress history. Drag tasks or change progress, then undo or redo.</MudText>
+            </div>
+            <MudStack Row="true" Spacing="1">
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Undo" OnClick="Undo" Disabled="@(_undoStack.Count == 0)">Undo</MudButton>
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Redo" OnClick="Redo" Disabled="@(_redoStack.Count == 0)">Redo</MudButton>
+            </MudStack>
+        </MudStack>
+
+        <MudPaper Class="pa-4" Elevation="1" Style="height:420px;">
+            <MudGanttChart Tasks="_tasks"
+                           Events="_events"
+                           Color="Color.Primary"
+                           Variant="Variant.Outlined"
+                           TaskDatesChanged="OnTaskDatesChanged"
+                           TaskProgressChanged="OnTaskProgressChanged" />
+        </MudPaper>
+    </MudStack>
+</MudContainer>
+
+@code {
+    private IReadOnlyList<MudGanttTask> _tasks = GanttExampleData.CreateProjectTasks().Select(Clone).ToList();
+    private readonly IReadOnlyList<MudGanttEvent> _events = GanttExampleData.CreateProjectEvents();
+    private readonly Stack<IReadOnlyList<MudGanttTask>> _undoStack = [];
+    private readonly Stack<IReadOnlyList<MudGanttTask>> _redoStack = [];
+
+    private Task OnTaskDatesChanged(MudGanttTask task)
+    {
+        PushUndo();
+        ApplyTask(task);
+        Snackbar.Add($"Moved {task.Name}", Severity.Info);
+        return Task.CompletedTask;
+    }
+
+    private Task OnTaskProgressChanged(MudGanttTask task)
+    {
+        PushUndo();
+        ApplyTask(task);
+        Snackbar.Add($"Updated {task.Name}", Severity.Info);
+        return Task.CompletedTask;
+    }
+
+    private void Undo()
+    {
+        if (_undoStack.Count == 0)
+            return;
+        _redoStack.Push(_tasks.Select(Clone).ToList());
+        _tasks = _undoStack.Pop().Select(Clone).ToList();
+    }
+
+    private void Redo()
+    {
+        if (_redoStack.Count == 0)
+            return;
+        _undoStack.Push(_tasks.Select(Clone).ToList());
+        _tasks = _redoStack.Pop().Select(Clone).ToList();
+    }
+
+    private void PushUndo()
+    {
+        _undoStack.Push(_tasks.Select(Clone).ToList());
+        _redoStack.Clear();
+    }
+
+    private void ApplyTask(MudGanttTask updated)
+    {
+        _tasks = _tasks.Select(task => task.Id == updated.Id ? Clone(updated) : Clone(task)).ToList();
+    }
+
+    private static MudGanttTask Clone(MudGanttTask source) => new()
+    {
+        Id = source.Id,
+        Name = source.Name,
+        StartDate = source.StartDate,
+        EndDate = source.EndDate,
+        Progress = source.Progress,
+        Color = source.Color,
+        Links = source.Links.Select(x => new Link(x.Id, x.LinkType)).ToArray(),
+        BaselineStartDate = source.BaselineStartDate,
+        BaselineEndDate = source.BaselineEndDate,
+        BaselineColor = source.BaselineColor,
+        IsCritical = source.IsCritical,
+        RightLabel = source.RightLabel,
+        EstimatedHours = source.EstimatedHours,
+        ActualHours = source.ActualHours,
+        Tooltip = source.Tooltip
+    };
+}

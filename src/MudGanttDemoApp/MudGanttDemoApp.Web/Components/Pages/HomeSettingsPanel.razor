@@ -1,0 +1,82 @@
+<MudPaper Class="pa-4 mb-4" Elevation="1">
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="3">
+            <MudText Typo="Typo.subtitle2" Class="mb-2">
+                <MudIcon Icon="@Icons.Material.Filled.Palette" Size="Size.Small" Class="mr-1" />
+                Color Theme
+            </MudText>
+            <MudRadioGroup Value="@Color" ValueChanged="OnColorChanged" T="Color">
+                <MudStack Spacing="1">
+                    <MudRadio Value="Color.Primary" Color="Color.Primary" Dense>Primary</MudRadio>
+                    <MudRadio Value="Color.Secondary" Color="Color.Secondary" Dense>Secondary</MudRadio>
+                    <MudRadio Value="Color.Tertiary" Color="Color.Tertiary" Dense>Tertiary</MudRadio>
+                    <MudRadio Value="Color.Success" Color="Color.Success" Dense>Success</MudRadio>
+                </MudStack>
+            </MudRadioGroup>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudText Typo="Typo.subtitle2" Class="mb-2">
+                <MudIcon Icon="@Icons.Material.Filled.Style" Size="Size.Small" Class="mr-1" />
+                Variant
+            </MudText>
+            <MudRadioGroup Value="@Variant" ValueChanged="OnVariantChanged" T="Variant">
+                <MudRadio Value="Variant.Outlined" Dense>Outlined</MudRadio>
+                <MudRadio Value="Variant.Filled" Dense>Filled</MudRadio>
+            </MudRadioGroup>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudText Typo="Typo.subtitle2" Class="mb-2">
+                <MudIcon Icon="@Icons.Material.Filled.FormatSize" Size="Size.Small" Class="mr-1" />
+                Size
+            </MudText>
+            <MudRadioGroup Value="@Size" ValueChanged="OnSizeChanged" T="Size">
+                <MudStack Spacing="1">
+                    <MudRadio Value="Size.Small" Dense>Small</MudRadio>
+                    <MudRadio Value="Size.Medium" Dense>Medium</MudRadio>
+                    <MudRadio Value="Size.Large" Dense>Large</MudRadio>
+                </MudStack>
+            </MudRadioGroup>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudText Typo="Typo.subtitle2" Class="mb-2">
+                <MudIcon Icon="@Icons.Material.Filled.Tune" Size="Size.Small" Class="mr-1" />
+                Options
+            </MudText>
+            <MudStack Spacing="1">
+                <MudCheckBox T="bool" Value="@ReadOnly" ValueChanged="@(value => OnReadOnlyChanged(value))" Dense Color="Color.Primary">Read-Only</MudCheckBox>
+                <MudCheckBox T="bool" Value="@Dense" ValueChanged="@(value => OnDenseChanged(value))" Dense Color="Color.Primary">Dense Layout</MudCheckBox>
+                <MudCheckBox T="bool" Value="@DarkMode" ValueChanged="@(value => OnDarkModeChanged(value))" Dense Color="Color.Primary">Dark Mode</MudCheckBox>
+                <MudDivider Class="my-2" />
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="OnAssignColors" FullWidth>Random Colors</MudButton>
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="OnClearColors" FullWidth>Clear Colors</MudButton>
+            </MudStack>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+    [Parameter] public Color Color { get; set; }
+    [Parameter] public Variant Variant { get; set; }
+    [Parameter] public Size Size { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool Dense { get; set; }
+    [Parameter] public bool DarkMode { get; set; }
+    [Parameter] public EventCallback<Color> ColorChanged { get; set; }
+    [Parameter] public EventCallback<Variant> VariantChanged { get; set; }
+    [Parameter] public EventCallback<Size> SizeChanged { get; set; }
+    [Parameter] public EventCallback<bool> ReadOnlyChanged { get; set; }
+    [Parameter] public EventCallback<bool> DenseChanged { get; set; }
+    [Parameter] public EventCallback<bool> DarkModeChanged { get; set; }
+    [Parameter] public EventCallback OnAssignColors { get; set; }
+    [Parameter] public EventCallback OnClearColors { get; set; }
+
+    private Task OnColorChanged(Color value) => ColorChanged.InvokeAsync(value);
+    private Task OnVariantChanged(Variant value) => VariantChanged.InvokeAsync(value);
+    private Task OnSizeChanged(Size value) => SizeChanged.InvokeAsync(value);
+    private Task OnReadOnlyChanged(bool value) => ReadOnlyChanged.InvokeAsync(value);
+    private Task OnDenseChanged(bool value) => DenseChanged.InvokeAsync(value);
+    private Task OnDarkModeChanged(bool value) => DarkModeChanged.InvokeAsync(value);
+}

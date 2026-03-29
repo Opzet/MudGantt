@@ -1,0 +1,58 @@
+@page "/sample/calendar-clients"
+
+<PageTitle>Client Job Calendars</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="3">
+        <div>
+            <MudText Typo="Typo.h4">Grouped client / job calendar</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Calendar view backed by grouped client and job summaries for manufacturing coordination.</MudText>
+        </div>
+
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudCalendar T="CalendarExampleItem" Items="_items" />
+        </MudPaper>
+
+        <MudExpansionPanels MultiExpansion="true">
+            @foreach (var client in _items.Where(x => x.Client is not null).GroupBy(x => x.Client!).OrderBy(x => x.Key))
+            {
+                <MudExpansionPanel Text="@client.Key">
+                    <MudSimpleTable>
+                        <thead>
+                            <tr>
+                                <th>Job</th>
+                                <th>Machine</th>
+                                <th>Date</th>
+                                <th>Category</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in client.OrderBy(x => x.Start))
+                            {
+                                <tr>
+                                    <td>@item.JobId</td>
+                                    <td>@item.Machine</td>
+                                    <td>@item.Start.ToString("dd MMM yyyy HH:mm")</td>
+                                    <td>@item.Category</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                </MudExpansionPanel>
+            }
+        </MudExpansionPanels>
+    </MudStack>
+</MudContainer>
+
+@code {
+    private readonly IReadOnlyList<CalendarExampleItem> _items =
+    [
+        new CalendarExampleItem { Start = new DateTime(2025, 11, 3, 8, 0, 0), Text = "Job 2501 · Client A", Client = "Client A", JobId = "2501", Machine = "CNC-01", Category = "Machining" },
+        new CalendarExampleItem { Start = new DateTime(2025, 11, 4, 10, 0, 0), Text = "Job 2502 · Client A", Client = "Client A", JobId = "2502", Machine = "Laser-01", Category = "Cutting" },
+        new CalendarExampleItem { Start = new DateTime(2025, 11, 5, 11, 0, 0), Text = "Job 2512 · Client B", Client = "Client B", JobId = "2512", Machine = "CNC-02", Category = "Machining" },
+        new CalendarExampleItem { Start = new DateTime(2025, 11, 6, 14, 0, 0), Text = "Job 2513 · Client B", Client = "Client B", JobId = "2513", Machine = "Paint Booth", Category = "Finishing" },
+        new CalendarExampleItem { Start = new DateTime(2025, 11, 7, 9, 0, 0), Text = "Job 2521 · Client C", Client = "Client C", JobId = "2521", Machine = "Laser-01", Category = "Prototype" },
+        new CalendarExampleItem { Start = new DateTime(2025, 11, 10, 8, 30, 0), Text = "Job 2527 · Client D", Client = "Client D", JobId = "2527", Machine = "CNC-01", Category = "Production" },
+        new CalendarExampleItem { Start = new DateTime(2025, 11, 11), Text = "Public holiday", AllDay = true, Category = "Non-working" }
+    ];
+}

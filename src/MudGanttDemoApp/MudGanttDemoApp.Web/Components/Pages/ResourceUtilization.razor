@@ -1,0 +1,120 @@
+@page "/sample/resource-utilization"
+@using MudGanttDemoApp.Web.ManufacturingApi
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Resource Utilization</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+            <div>
+                <MudText Typo="Typo.h4">Resource utilization / histogram</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Machine-oriented utilization snapshot generated from the manufacturing dataset.</MudText>
+            </div>
+            <MudTextField @bind-Value="_search" Placeholder="Filter machine or worker" Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Style="min-width:240px" />
+        </MudStack>
+
+        @if (_dataset is null)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else
+        {
+            <MudGrid>
+                @foreach (var resource in FilteredResources)
+                {
+                    <MudItem xs="12" md="6" lg="4">
+                        <MudPaper Class="pa-4" Elevation="1" Style="cursor:pointer;" @onclick="() => _selectedMachine = resource.Machine">
+                            <MudText Typo="Typo.h6">@resource.Machine</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@resource.Worker</MudText>
+                            <MudProgressLinear Value="@resource.UtilizationPercent" Color="@(resource.UtilizationPercent >= 85 ? Color.Error : resource.UtilizationPercent >= 65 ? Color.Warning : Color.Success)" Class="my-3" />
+                            <MudText Typo="Typo.body2">Utilization: @resource.UtilizationPercent%</MudText>
+                            <MudText Typo="Typo.body2">Booked jobs: @resource.BookedJobs</MudText>
+                            <MudText Typo="Typo.body2">Planned hours: @resource.PlannedHours</MudText>
+                            <MudText Typo="Typo.body2">Conflicts: @resource.ConflictCount</MudText>
+                        </MudPaper>
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <MudGrid>
+                <MudItem xs="12" lg="7">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudSimpleTable>
+                            <thead>
+                                <tr>
+                                    <th>Machine</th>
+                                    <th>Workers</th>
+                                    <th>Jobs</th>
+                                    <th>Hours</th>
+                                    <th>Utilization</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var resource in FilteredResources)
+                                {
+                                    <tr class="@(resource.Machine == _selectedMachine ? "selected-flow-row" : null)">
+                                        <td>@resource.Machine</td>
+                                        <td>@resource.Worker</td>
+                                        <td>@resource.BookedJobs</td>
+                                        <td>@resource.PlannedHours</td>
+                                        <td>@resource.UtilizationPercent%</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" lg="5">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.h6">@(_selectedMachine ?? "Select a machine")</MudText>
+                        @if (SelectedMachineResource is not null)
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@SelectedMachineResource.Worker</MudText>
+                            <MudDivider Class="my-2" />
+                            @foreach (var job in SelectedMachineJobs.Take(12))
+                            {
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mb-2">
+                                    <MudText Typo="Typo.body2">@job.Name</MudText>
+                                    <MudStack Row="true" Spacing="1">
+                                        <MudChip T="string" Color="@(job.IsCritical ? Color.Error : Color.Info)" Size="Size.Small">@job.Progress.ToString("P0")</MudChip>
+                                        @if (job.HasConflict)
+                                        {
+                                            <MudChip T="string" Color="Color.Warning" Size="Size.Small">Conflict</MudChip>
+                                        }
+                                    </MudStack>
+                                </MudStack>
+                            }
+                        }
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        }
+    </MudStack>
+</MudContainer>
+
+@code {
+    private HttpClient _http = default!;
+    private ManufacturingDatasetDto? _dataset;
+    private string _search = string.Empty;
+    private string? _selectedMachine;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _http = HttpClientFactory.CreateClient();
+        _http.BaseAddress = new Uri(NavigationManager.BaseUri);
+        _dataset = await _http.GetFromJsonAsync<ManufacturingDatasetDto>("api/manufacturing/dataset?jobs=1000");
+        _selectedMachine = _dataset?.Resources.FirstOrDefault()?.Machine;
+    }
+
+    private IReadOnlyList<ManufacturingResourceDto> FilteredResources => ManufacturingQueries.FilterResources(_dataset?.Resources ?? [], _search);
+
+    private ManufacturingResourceDto? SelectedMachineResource => FilteredResources.FirstOrDefault(x => x.Machine == _selectedMachine);
+
+    private IReadOnlyList<ManufacturingJobDto> SelectedMachineJobs => _dataset?.Jobs
+        .Where(x => x.Machine == _selectedMachine)
+        .OrderByDescending(x => x.IsCritical)
+        .ThenBy(x => x.StartDate)
+        .ToList() ?? [];
+}

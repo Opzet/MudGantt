@@ -1,0 +1,103 @@
+@page "/project-health"
+@implements IAsyncDisposable
+@using MudGanttDemoApp.Web.ManufacturingApi
+@using MudGanttDemoApp.Web.SchedulerApi
+@inject ISchedulerProjectStore SchedulerProjectStore
+@inject IManufacturingDemoStore ManufacturingDemoStore
+@inject ISnackbar Snackbar
+
+<PageTitle>Project Health</PageTitle>
+
+<MudStack Spacing="2">
+    <DemoPageHeader Title="Project health dashboard"
+                    Description="Burndown, risk scoring, and manufacturing delivery health derived from the current scheduler and manufacturing demo data."
+                    Icon="@Icons.Material.Filled.MonitorHeart">
+        <Actions>
+            <MudChip T="string" Size="Size.Small" Color="Color.Secondary">
+                @(_lastRefreshedUtc.HasValue ? $"Updated {_lastRefreshedUtc.Value.ToLocalTime():g}" : "Not refreshed")
+            </MudChip>
+            <MudSwitch @bind-Value="_autoRefreshEnabled" Color="Color.Primary" Label="Auto refresh" />
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh" OnClick="RefreshAsync">Refresh</MudButton>
+        </Actions>
+    </DemoPageHeader>
+
+    <MudPaper Elevation="1" Class="pa-3">
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudSelect T="string" @bind-Value="_selectedClient" Label="Client" @bind-Value:after="BuildDashboard">
+                    <MudSelectItem T="string" Value="@ProjectHealthDashboardSupport.AllClients">All clients</MudSelectItem>
+                    @foreach (var client in _clients)
+                    {
+                        <MudSelectItem T="string" Value="@client">@client</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudSelect T="string" @bind-Value="_selectedPhase" Label="Phase" @bind-Value:after="BuildDashboard">
+                    <MudSelectItem T="string" Value="@ProjectHealthDashboardSupport.AllPhases">All phases</MudSelectItem>
+                    @foreach (var phase in _phases)
+                    {
+                        <MudSelectItem T="string" Value="@phase">@phase</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudDatePicker @bind-Date="_throughDate" Label="Track through date" @bind-Date:after="BuildDashboard" />
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="2"><MetricSummaryCard Label="Planned Hours" Value="@_plannedHours.ToString("0.#")" /></MudItem>
+        <MudItem xs="12" sm="6" md="2"><MetricSummaryCard Label="Earned Hours" Value="@_earnedHours.ToString("0.#")" /></MudItem>
+        <MudItem xs="12" sm="6" md="2"><MetricSummaryCard Label="Completion" Value="@($"{_completionPercent:0}%")" /></MudItem>
+        <MudItem xs="12" sm="6" md="2"><MetricSummaryCard Label="Overdue Tasks" Value="@_overdueTasks.ToString()" /></MudItem>
+        <MudItem xs="12" sm="6" md="2"><MetricSummaryCard Label="At-Risk Items" Value="@_atRiskTasks.ToString()" /></MudItem>
+        <MudItem xs="12" sm="6" md="2">
+            <MetricSummaryCard Label="Risk Score">
+                <ValueContent>
+                    <MudChip T="string" Color="@RiskScoreColor" Size="Size.Small">@_riskScore.ToString("0") / 100</MudChip>
+                </ValueContent>
+            </MetricSummaryCard>
+        </MudItem>
+    </MudGrid>
+
+    <MudPaper Elevation="2" Class="pa-3">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+            <MudText Typo="Typo.h6">Burndown (Ideal vs Actual Remaining)</MudText>
+            <MudChip T="string" Size="Size.Small" Color="Color.Info">@_burndownLabels.Length points</MudChip>
+        </MudStack>
+        @if (_burndownSeries.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" Dense="true">Not enough task data to render burndown chart.</MudAlert>
+        }
+        else
+        {
+            <MudChart T="double" ChartType="ChartType.Line" ChartSeries="_burndownSeries" XAxisLabels="_burndownLabels" />
+        }
+    </MudPaper>
+
+    <MudPaper Elevation="2" Class="pa-3">
+        <MudText Typo="Typo.h6" Class="mb-2">360° risks and issues</MudText>
+        <MudTable Items="_riskItems" Dense="true" Hover="true">
+            <HeaderContent>
+                <MudTh>Category</MudTh>
+                <MudTh>Scope</MudTh>
+                <MudTh>Item</MudTh>
+                <MudTh>Summary</MudTh>
+                <MudTh>Severity</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Category</MudTd>
+                <MudTd>@context.ScopeName</MudTd>
+                <MudTd>@context.ItemName</MudTd>
+                <MudTd>@context.Summary</MudTd>
+                <MudTd><MudChip T="string" Color="@context.Color" Size="Size.Small">@context.Severity</MudChip></MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">No critical shortfalls detected in selected scope.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudPaper>
+</MudStack>
+

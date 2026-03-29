@@ -1,0 +1,29 @@
+@page "/sample/dependencies"
+
+<PageTitle>Dependency Gantt Example</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudStack Spacing="3">
+        <div>
+            <MudText Typo="Typo.h4">Dependencies and sequencing</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Shows task links and finish-to-start relationships for delivery planning.</MudText>
+        </div>
+
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudGanttChart Tasks="_tasks"
+                           Events="_events"
+                           Color="Color.Secondary"
+                           Variant="Variant.Outlined"
+                           Size="Size.Medium"
+                           ReadOnly="true" />
+        </MudPaper>
+    </MudStack>
+</MudContainer>
+
+@code {
+    private readonly IReadOnlyList<MudGanttTask> _tasks = GanttExampleData.CreateDependencyTasks();
+    private readonly IReadOnlyList<MudGanttEvent> _events =
+    [
+        new MudGanttEvent { Id = "review", Name = "Architecture Review", Date = new DateTimeOffset(2025, 8, 6, 13, 0, 0, TimeSpan.Zero) }
+    ];
+}

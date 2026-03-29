@@ -1,0 +1,52 @@
+@page "/sample/calendar-production"
+
+<PageTitle>Production Calendar Example</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="3">
+        <div>
+            <MudText Typo="Typo.h4">Production calendar</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Calendar-oriented view for plant utilisation, customer bookings, servicing, and constrained manufacturing slots.</MudText>
+        </div>
+
+        <MudGrid>
+            <MudItem xs="12" lg="8">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudCalendar T="CalendarExampleItem" Items="_items" />
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" lg="4">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudText Typo="Typo.h6" Class="mb-2">Daily load snapshot</MudText>
+                    <MudSimpleTable>
+                        <thead>
+                            <tr>
+                                <th>Day</th>
+                                <th>Booked jobs</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var day in _items.GroupBy(x => x.Start.Date).OrderBy(x => x.Key).Take(10))
+                            {
+                                <tr>
+                                    <td>@day.Key.ToString("dd MMM")</td>
+                                    <td>@day.Count()</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudStack>
+</MudContainer>
+
+@code {
+    private readonly IReadOnlyList<CalendarExampleItem> _items = Enumerable.Range(0, 24)
+        .Select(i => new CalendarExampleItem
+        {
+            Start = new DateTime(2025, 11, 1).AddDays(i % 14).AddHours(6 + (i % 10)),
+            Text = $"Job {2500 + i} · Client {(char)('A' + (i % 6))} · CNC {(i % 5) + 1}"
+        })
+        .ToList();
+}

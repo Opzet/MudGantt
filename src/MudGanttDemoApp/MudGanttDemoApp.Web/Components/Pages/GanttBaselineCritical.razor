@@ -1,0 +1,70 @@
+@page "/sample/critical-path"
+
+<PageTitle>Critical Path and Baseline Example</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+            <div>
+                <MudText Typo="Typo.h4">Critical path and baselines</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Shows baseline bars, weekend highlighting, and critical-path emphasis for production planning.</MudText>
+            </div>
+            <MudButtonGroup Variant="Variant.Outlined" Color="Color.Error">
+                <MudButton StartIcon="@Icons.Material.Filled.ZoomIn" OnClick="ZoomIn">Zoom In</MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.ZoomOut" OnClick="ZoomOut">Zoom Out</MudButton>
+                <MudButton StartIcon="@Icons.Material.Filled.FitScreen" OnClick="ResetZoom">Reset</MudButton>
+            </MudButtonGroup>
+        </MudStack>
+
+        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+            Baseline bars show the original plan. Tasks with red outlines are on the critical path. Weekend bands are highlighted as non-working time.
+        </MudAlert>
+
+        <MudPaper Class="pa-4" Elevation="1" Style="height:420px;">
+            <MudGanttChart @ref="_chart"
+                           Tasks="_tasks"
+                           Events="_events"
+                           Color="Color.Error"
+                           Variant="Variant.Outlined"
+                           Size="Size.Small"
+                           Dense="true"
+                           ReadOnly="true" />
+        </MudPaper>
+
+        <MudSimpleTable>
+            <thead>
+                <tr>
+                    <th>Task</th>
+                    <th>Baseline</th>
+                    <th>Current</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var task in _tasks)
+                {
+                    <tr>
+                        <td>@task.Name</td>
+                        <td>@FormatRange(task.BaselineStartDate, task.BaselineEndDate)</td>
+                        <td>@FormatRange(task.StartDate, task.EndDate)</td>
+                        <td>@(task.IsCritical ? "Critical" : "Buffered")</td>
+                    </tr>
+                }
+            </tbody>
+        </MudSimpleTable>
+    </MudStack>
+</MudContainer>
+
+@code {
+    private MudGanttChart _chart = default!;
+    private readonly IReadOnlyList<MudGanttTask> _tasks = GanttExampleData.CreateBaselineCriticalTasks();
+    private readonly IReadOnlyList<MudGanttEvent> _events =
+    [
+        new MudGanttEvent { Id = "ship", Name = "Ship", Date = new DateTimeOffset(2025, 11, 11, 16, 0, 0, TimeSpan.Zero) }
+    ];
+
+    private static string FormatRange(DateTimeOffset? start, DateTimeOffset? end) => $"{start:dd MMM HH:mm} - {end:dd MMM HH:mm}";
+    private Task ZoomIn() => _chart.ZoomInAsync(20);
+    private Task ZoomOut() => _chart.ZoomOutAsync(20);
+    private Task ResetZoom() => _chart.ResetZoomAsync();
+}

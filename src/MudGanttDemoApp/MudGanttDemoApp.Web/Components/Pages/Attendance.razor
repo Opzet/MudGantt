@@ -16,16 +16,12 @@
                 Reload
             </MudButton>
             <MudSwitch @bind-Value="_showEmployeeList" Color="Color.Primary">Show employee list</MudSwitch>
-            <MudButtonGroup Variant="Variant.Outlined" Color="Color.Primary">
-                <MudButton StartIcon="@Icons.Material.Filled.ZoomIn" OnClick="ZoomIn">Zoom In</MudButton>
-                <MudButton StartIcon="@Icons.Material.Filled.ZoomOut" OnClick="ZoomOut">Zoom Out</MudButton>
-                <MudButton StartIcon="@Icons.Material.Filled.FitScreen" OnClick="ResetZoom">Reset</MudButton>
-            </MudButtonGroup>
+            <GanttZoomControls OnZoomIn="ZoomIn" OnZoomOut="ZoomOut" OnReset="ResetZoom" />
         </MudStack>
     </MudPaper>
 
-    <MudPaper Elevation="0" Class="attendance-surface" Style="height: 420px; overflow: hidden;">
-        <MudStack Row="true" Style="height:100%;">
+    <MudPaper Elevation="0" Class="attendance-surface">
+        <MudStack Row="true" Class="attendance-stack">
             @if (_showEmployeeList)
             {
                 <MudPaper Elevation="0" Class="attendance-list-panel" Style="@EmployeeListStyle">
@@ -41,7 +37,7 @@
                 </MudPaper>
             }
 
-            <MudPaper Elevation="0" Class="flex-grow-1" Style="min-width:0; overflow:auto;">
+            <MudPaper Elevation="0" Class="flex-grow-1 attendance-chart-host">
                 <div class="attendance-gantt-scroll">
                     <div class="attendance-gantt-canvas">
                         <MudGanttChart @ref="_chart"
@@ -221,44 +217,3 @@
     private async Task ResetZoom() => await _chart.ResetZoomAsync();
 }
 
-<style>
-    .attendance-page {
-        width: calc(100% + 3rem);
-        margin-left: -1.5rem;
-        margin-right: -1.5rem;
-    }
-
-    .attendance-surface {
-        border: 0;
-        border-radius: 0;
-    }
-
-    .attendance-row {
-        display: flex;
-        align-items: center;
-        border-bottom: 1px solid var(--mud-palette-divider);
-        padding: 0 8px;
-        box-sizing: border-box;
-    }
-
-    .attendance-row-text {
-        width: 100%;
-        font-size: 0.80rem;
-        line-height: 1.1rem;
-        overflow: hidden;
-        text-overflow: clip;
-        white-space: nowrap;
-    }
-
-    .attendance-gantt-scroll {
-        width: 100%;
-        height: 100%;
-        overflow-x: auto;
-        overflow-y: auto;
-    }
-
-    .attendance-gantt-canvas {
-        min-width: 1400px;
-        height: 100%;
-    }
-</style>
