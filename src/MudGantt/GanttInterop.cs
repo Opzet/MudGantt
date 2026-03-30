@@ -66,5 +66,11 @@ namespace MudGantt
             var module = await moduleTask.Value;
             await module.InvokeVoidAsync("zoomOutGantt", id, amount);
         }
+
+        internal async Task SetHorizontalScrollRatioAsync(string id, double ratio)
+        {
+            var module = await moduleTask.Value;
+            await module.InvokeVoidAsync("setGanttScrollRatio", id, ratio);
+        }
     }
 }

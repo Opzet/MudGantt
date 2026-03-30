@@ -44,6 +44,11 @@ namespace MudGantt
         [Parameter] public Size Size { get; set; } = Size.Medium;
 
         /// <summary>
+        /// Shared row and header sizing used by the chart and external task list surfaces.
+        /// </summary>
+        [Parameter] public MudGanttLayoutMetrics? LayoutMetrics { get; set; }
+
+        /// <summary>
         /// List of events
         /// </summary>
         [Parameter] public IReadOnlyList<MudGanttEvent>? Events { get; set; }
@@ -118,6 +123,16 @@ namespace MudGantt
         /// </summary>
         [Parameter] public bool DimNonHighlighted { get; set; }
 
+        /// <summary>
+        /// Optional selector for an external scroll surface that should stay vertically aligned with the chart.
+        /// </summary>
+        [Parameter] public string? SyncVerticalScrollSelector { get; set; }
+
+        /// <summary>
+        /// Raised when the horizontal timeline scroll position changes. Value is a 0-1 ratio.
+        /// </summary>
+        [Parameter] public EventCallback<double> HorizontalScrollRatioChanged { get; set; }
+
         public string CssClass => new CssBuilder("mud-gantt")
             .AddClass("mud-color-" + Color.ToString().ToLowerInvariant(), true)
             .AddClass("mud-variant-" + Variant.ToString().ToLowerInvariant(), true)
@@ -131,6 +146,7 @@ namespace MudGantt
 
         private GanttInterop? _interop;
         private DotNetObjectReference<GanttCallback>? _callback;
+        private MudGanttLayoutMetrics ResolvedLayoutMetrics => LayoutMetrics ?? MudGanttLayoutMetrics.From(Dense, Size);
 
         /// <summary>
         /// The task right-clicked
@@ -217,6 +233,18 @@ namespace MudGantt
             }
         }
 
+        /// <summary>
+        /// Sets the horizontal timeline scroll position using a 0-1 ratio.
+        /// </summary>
+        public async Task SetHorizontalScrollRatioAsync(double ratio)
+        {
+            if (_interop is not null)
+            {
+                var clampedRatio = Math.Clamp(ratio, 0, 1);
+                await _interop.SetHorizontalScrollRatioAsync(Id, clampedRatio);
+            }
+        }
+
         private GanttData CreateData()
         {
             return new GanttData
@@ -227,10 +255,12 @@ namespace MudGantt
                 ReadOnly = ReadOnly,
                 Dense = Dense,
                 Size = Size,
+                LayoutMetrics = ResolvedLayoutMetrics,
                 SelectedTaskId = SelectedTaskId,
                 ScrollSelectedIntoView = ScrollSelectedIntoView,
                 HighlightedTaskIds = HighlightedTaskIds,
-                DimNonHighlighted = DimNonHighlighted
+                DimNonHighlighted = DimNonHighlighted,
+                SyncVerticalScrollSelector = SyncVerticalScrollSelector
             };
         }
 
@@ -333,6 +363,12 @@ namespace MudGantt
                 await TaskProgressChanged.InvokeAsync(task);
                 await TasksChanged.InvokeAsync(Tasks);
             }
+        }
+
+        internal Task OnHorizontalScrollChangedAsync(double scrollLeft, double maxScrollLeft)
+        {
+            var ratio = maxScrollLeft <= 0 ? 0 : Math.Clamp(scrollLeft / maxScrollLeft, 0, 1);
+            return HorizontalScrollRatioChanged.InvokeAsync(ratio);
         }
     }
 }

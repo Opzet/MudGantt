@@ -76,6 +76,34 @@ class GanntChart {
             return;
         }
 
+        this.externalScrollSyncSelector = null;
+        this.externalScrollSyncElement = null;
+        this.isSyncingFromChartScroll = false;
+        this.isSyncingFromExternalScroll = false;
+        this.wheelDelegate = (event) => { this.#onMouseWheel(event); };
+        this.wheelListenerOptions = { passive: false, capture: true };
+        this.containerScrollDelegate = () => {
+            if (!this.externalScrollSyncElement || this.isSyncingFromExternalScroll) {
+                this.#notifyHorizontalScrollChanged();
+            } else {
+                this.isSyncingFromChartScroll = true;
+                this.externalScrollSyncElement.scrollTop = this.container.scrollTop;
+                this.isSyncingFromChartScroll = false;
+                this.#notifyHorizontalScrollChanged();
+            }
+        };
+        this.externalScrollDelegate = () => {
+            if (!this.externalScrollSyncElement || this.isSyncingFromChartScroll) {
+                return;
+            }
+
+            this.isSyncingFromExternalScroll = true;
+            this.container.scrollTop = this.externalScrollSyncElement.scrollTop;
+            this.isSyncingFromExternalScroll = false;
+        };
+        this.container.addEventListener("scroll", this.containerScrollDelegate);
+        this.container.addEventListener("wheel", this.wheelDelegate, this.wheelListenerOptions);
+
         const observer = new ResizeObserver(() => {
             if (this.data) {
                 this.updateData(this.data);
@@ -85,7 +113,8 @@ class GanntChart {
 
         this.options = {};
         this.options.defaultTimelineEpochPadding = 1000 * 3600 * 24;
-        this.options.timelineEpochPadding = this.options.defaultTimelineEpochPadding;
+        this.options.timelineEpochPadding = 0;
+        this.options.timelineEpochOffset = 0;
         this.options.axisPadding = 5;
         this.options.grid = 'auto';
         this.options.axisHeight = 50;
@@ -111,7 +140,7 @@ class GanntChart {
 
     zoomIn(amount) {
         amount ??= 1;
-        this.options.timelineEpochPadding -= amount * 1000 * 240;
+        this.options.timelineEpochPadding = Math.max(0, this.options.timelineEpochPadding - amount * 1000 * 240);
         this.updateData(this.data);
     }
 
@@ -123,12 +152,84 @@ class GanntChart {
 
     resetZoom() {
         this.options.timelineEpochPadding = this.options.defaultTimelineEpochPadding;
+        this.options.timelineEpochOffset = 0;
         this.updateData(this.data);
+    }
+
+    panTimeline(horizontalDelta) {
+        if (!this.container || !this.range) {
+            return;
+        }
+
+        const clientWidth = Math.max(this.container.clientWidth, 1);
+        const epochsPerPixel = this.range / clientWidth;
+        this.options.timelineEpochOffset += horizontalDelta * epochsPerPixel;
+        this.updateData(this.data);
+    }
+
+    setScrollLeftRatio(ratio) {
+        if (!this.container) {
+            return;
+        }
+
+        const clampedRatio = Math.min(Math.max(ratio ?? 0, 0), 1);
+        const maxScrollLeft = Math.max(this.container.scrollWidth - this.container.clientWidth, 0);
+        this.container.scrollLeft = maxScrollLeft * clampedRatio;
+        this.#notifyHorizontalScrollChanged();
     }
 
     destroy() {
         this.isDestroyed = true;
         document.removeEventListener("pointerup", this.pointerUpDelegate);
+        this.container?.removeEventListener("scroll", this.containerScrollDelegate);
+        this.container?.removeEventListener("wheel", this.wheelDelegate, this.wheelListenerOptions);
+        this.ganttChart?.removeEventListener("wheel", this.wheelDelegate, this.wheelListenerOptions);
+        this.#detachExternalVerticalScrollSync();
+    }
+
+    #notifyHorizontalScrollChanged() {
+        if (!this.callback || !this.container) {
+            return;
+        }
+
+        const maxScrollLeft = Math.max(this.container.scrollWidth - this.container.clientWidth, 0);
+        this.callback.invokeMethodAsync("OnHorizontalScrollChangedAsync", this.container.scrollLeft, maxScrollLeft);
+    }
+
+    #detachExternalVerticalScrollSync() {
+        if (this.externalScrollSyncElement) {
+            this.externalScrollSyncElement.removeEventListener("scroll", this.externalScrollDelegate);
+        }
+
+        this.externalScrollSyncElement = null;
+        this.externalScrollSyncSelector = null;
+    }
+
+    #setExternalVerticalScrollSync(selector) {
+        const resolvedSelector = selector && selector.trim().length > 0 ? selector : null;
+
+        if (!resolvedSelector) {
+            this.#detachExternalVerticalScrollSync();
+            return;
+        }
+
+        const externalElement = document.querySelector(resolvedSelector);
+        if (!externalElement) {
+            this.#detachExternalVerticalScrollSync();
+            this.externalScrollSyncSelector = resolvedSelector;
+            return;
+        }
+
+        if (this.externalScrollSyncSelector === resolvedSelector && this.externalScrollSyncElement === externalElement) {
+            this.externalScrollSyncElement.scrollTop = this.container.scrollTop;
+            return;
+        }
+
+        this.#detachExternalVerticalScrollSync();
+        this.externalScrollSyncSelector = resolvedSelector;
+        this.externalScrollSyncElement = externalElement;
+        this.externalScrollSyncElement.addEventListener("scroll", this.externalScrollDelegate);
+        this.externalScrollSyncElement.scrollTop = this.container.scrollTop;
     }
 
     #reset() {
@@ -152,7 +253,7 @@ class GanntChart {
 
             document.addEventListener("pointerup", this.pointerUpDelegate);
             this.ganttChart.addEventListener("contextmenu", (event) => { this.#onContextMenu(event); });
-            this.ganttChart.addEventListener("mousewheel", (event) => { this.#onMouseWheel(event); });
+            this.ganttChart.addEventListener("wheel", this.wheelDelegate, this.wheelListenerOptions);
             this.ganttChart.addEventListener("pointerdown", (event) => { this.#onMouseMove(event); this.#onMouseDown(event); });
             this.ganttChart.addEventListener("pointermove", (event) => { this.#onMouseMove(event); });
         } 
@@ -172,6 +273,7 @@ class GanntChart {
 
         this.container.scrollLeft = Math.min(previousScrollLeft, Math.max(this.viewBoxWidth - parentWidth, 0));
         this.container.scrollTop = previousScrollTop;
+        this.#notifyHorizontalScrollChanged();
     }
 
     #calculateChartWidth(parentWidth) {
@@ -216,9 +318,39 @@ class GanntChart {
         return 'day';
     }
 
+    #normalizeWheelDelta(delta, deltaMode) {
+        switch (deltaMode) {
+            case 1:
+                return delta * 40;
+            case 2:
+                return delta * Math.max(this.container?.clientWidth ?? 0, 600);
+            default:
+                return delta;
+        }
+    }
+
     #onMouseWheel(event) {
+        const isHorizontalPanIntent = event.ctrlKey || event.shiftKey || Math.abs(event.deltaX) > Math.abs(event.deltaY);
+        if (isHorizontalPanIntent) {
+            event.preventDefault();
+            event.stopPropagation();
+            const rawHorizontalDelta = Math.abs(event.deltaX) > 0 ? event.deltaX : event.deltaY;
+            const horizontalDelta = this.#normalizeWheelDelta(rawHorizontalDelta, event.deltaMode);
+            const maxScrollLeft = Math.max(this.container.scrollWidth - this.container.clientWidth, 0);
+            if (maxScrollLeft > 0) {
+                this.container.scrollLeft += horizontalDelta;
+                this.#notifyHorizontalScrollChanged();
+            } else {
+                this.panTimeline(horizontalDelta);
+            }
+            return;
+        }
+
         if (event.altKey) {
-            this.options.timelineEpochPadding += event.deltaY * 1000 * 240;
+            event.preventDefault();
+            event.stopPropagation();
+            const zoomDelta = this.#normalizeWheelDelta(event.deltaY, event.deltaMode);
+            this.options.timelineEpochPadding += zoomDelta * 1000 * 6;
             this.updateData(this.data);
         }
     }
@@ -282,6 +414,11 @@ class GanntChart {
             maxEpochs += this.options.timelineEpochPadding / 2;
             this.minDate = new Date(minEpochs);
             this.maxDate = new Date(maxEpochs);
+        }
+
+        if (this.minDate && this.options.timelineEpochOffset !== 0) {
+            this.minDate = new Date(this.minDate.getTime() + this.options.timelineEpochOffset);
+            this.maxDate = new Date(this.maxDate.getTime() + this.options.timelineEpochOffset);
         }
 
     	if(this.minDate) {
@@ -646,8 +783,19 @@ class GanntChart {
     #addToday() {
         const evtEpochs = new Date().getTime();
         const relativeEpochs = (evtEpochs - this.minEpochs);
+        if (relativeEpochs < 0 || relativeEpochs > this.range) {
+            return;
+        }
+
         const x = relativeEpochs * this.viewBoxWidth / this.range;
         this.#addGridLine(x, "today-line");
+
+        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.setAttribute("data-type", "today-label");
+        text.setAttribute("x", x + 4);
+        text.setAttribute("y", Math.max(this.options.axisPadding, 2));
+        text.textContent = "Now";
+        this.ganttChart.appendChild(text);
     }
 
     #addNonWorkingBands() {
@@ -841,27 +989,15 @@ class GanntChart {
             data.items = [];
         }
         this.readOnly = data.readOnly;
-        this.options.taskSpacing = data.dense ? 2 : 10;
-        //console.log(`style dense=${data.dense}, size=${data.size}`);
-        switch (data.size) {
-            case 0:
-                this.options.taskHeight = 35;
-                this.options.axisHeight = 40;
-                break;
-            case 2:
-                this.options.taskHeight = 60;
-                this.options.axisHeight = 60;
-                break;
-            case 1:
-            default:
-                this.options.taskHeight = 50;
-                this.options.axisHeight = 50;
-                break;
-        }
+        const layoutMetrics = data.layoutMetrics ?? {};
+        this.options.taskSpacing = layoutMetrics.taskSpacing ?? (data.dense ? 2 : 10);
+        this.options.taskHeight = layoutMetrics.taskHeight ?? 50;
+        this.options.axisHeight = layoutMetrics.axisHeight ?? 50;
 
         this.data = data;
 
         this.#reset();
+        this.#setExternalVerticalScrollSync(data.syncVerticalScrollSelector);
         this.#addTaskData();
 
         // Populate the Gantt chart with data
@@ -1591,5 +1727,10 @@ export function zoomInGantt(id, amount) {
 export function zoomOutGantt(id, amount) {
     if (window.blazorGanttCharts[id]) {
         window.blazorGanttCharts[id].zoomOut(amount);
+    }
+}
+export function setGanttScrollRatio(id, ratio) {
+    if (window.blazorGanttCharts[id]) {
+        window.blazorGanttCharts[id].setScrollLeftRatio(ratio);
     }
 }

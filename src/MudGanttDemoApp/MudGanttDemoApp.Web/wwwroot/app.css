@@ -59,7 +59,7 @@ h1:focus {
     background-color: var(--mud-palette-action-hover);
 }
 
-@media (min-width: 1200px) {
+@media (min-width: 800px) {
     .cockpit-detail-pane {
         position: sticky;
         top: 1rem;
@@ -74,63 +74,22 @@ h1:focus {
     margin-bottom: 1rem;
 }
 
-.gantt-split-surface {
-    height: 600px;
-    overflow: hidden;
-}
-
-.gantt-split-stack {
-    height: 100%;
-}
-
-.gantt-task-list-panel {
-    overflow-y: auto;
+.gantt-home-page {
+    max-width: none;
+    width: 100%;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
     overflow-x: hidden;
-    border-right: 2px solid var(--mud-palette-divider);
 }
 
-.gantt-task-list-panel::-webkit-scrollbar {
-    width: 8px;
+.gantt-home-layout-toolbar {
+    margin-bottom: 1rem;
 }
 
-.gantt-task-list-panel::-webkit-scrollbar-track {
-    background: var(--mud-palette-background-grey);
-}
-
-.gantt-task-list-panel::-webkit-scrollbar-thumb {
-    background: var(--mud-palette-divider);
-    border-radius: 4px;
-}
-
-.gantt-task-list-panel::-webkit-scrollbar-thumb:hover {
-    background: var(--mud-palette-text-secondary);
-}
-
-.gantt-task-list-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: var(--mud-palette-surface);
-}
-
-.gantt-task-row {
-    cursor: pointer;
-    border-bottom: 1px solid var(--mud-palette-divider-light);
-    transition: all 0.2s;
-}
-
-.gantt-task-row:hover {
-    background-color: var(--mud-palette-action-hover) !important;
-}
-
-.gantt-task-row-selected {
-    background-color: var(--mud-palette-primary-lighten) !important;
-    border-left: 4px solid var(--mud-palette-primary) !important;
-}
-
-.gantt-chart-panel {
-    overflow: auto;
-    min-width: 0;
+.gantt-home-width-slider {
+    min-width: 220px;
+    max-width: 320px;
+    flex: 1 1 260px;
 }
 
 .stats-card {
@@ -210,6 +169,6 @@ h1:focus {
 }
 
 .attendance-gantt-canvas {
-    min-width: 1400px;
+    min-width: 1000px;
     height: 100%;
 }

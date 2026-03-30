@@ -1,8 +1,9 @@
 using MudBlazor;
+
 using MudGanttDemoApp.Web.ManufacturingApi;
 using MudGanttDemoApp.Web.SchedulerApi;
 
-namespace MudGanttDemoApp.Web.Components.Pages;
+namespace MudGanttDemoApp.Web.Components.Pages.MES;
 
 public partial class ProjectHealthDashboard : IAsyncDisposable
 {

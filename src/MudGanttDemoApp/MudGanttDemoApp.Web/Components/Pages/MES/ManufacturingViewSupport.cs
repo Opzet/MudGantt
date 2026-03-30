@@ -1,8 +1,10 @@
 using System.Text.Json;
+
 using MudGantt;
+
 using MudGanttDemoApp.Web.ManufacturingApi;
 
-namespace MudGanttDemoApp.Web.Components.Pages;
+namespace MudGanttDemoApp.Web.Components.Pages.MES;
 
 public sealed class ManufacturingViewPreset
 {

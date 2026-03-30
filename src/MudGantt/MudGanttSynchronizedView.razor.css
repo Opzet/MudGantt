@@ -1,0 +1,117 @@
+.mud-gantt-sync-surface {
+    height: 100%;
+    overflow: hidden;
+}
+
+.mud-gantt-sync-stack {
+    height: 100%;
+}
+
+.mud-gantt-sync-task-list-panel {
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-right: 2px solid var(--mud-palette-divider);
+    min-height: 0;
+    height: 100%;
+    flex: 0 0 auto;
+}
+
+.mud-gantt-sync-task-list-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--mud-palette-surface);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    box-sizing: border-box;
+}
+
+.mud-gantt-sync-task-list-header > * {
+    width: 100%;
+}
+
+.mud-gantt-sync-task-row {
+    cursor: pointer;
+    border-bottom: 1px solid var(--mud-palette-divider-light);
+    transition: all 0.2s;
+    box-sizing: border-box;
+    overflow: hidden;
+    outline: none;
+}
+
+.mud-gantt-sync-task-row:hover {
+    background-color: var(--mud-palette-action-hover) !important;
+}
+
+.mud-gantt-sync-task-row-selected {
+    background-color: var(--mud-palette-primary-lighten) !important;
+    border-left: 4px solid var(--mud-palette-primary) !important;
+}
+
+.mud-gantt-sync-task-row:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--mud-palette-primary);
+}
+
+.mud-gantt-sync-task-row-content {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 4px 12px;
+    box-sizing: border-box;
+}
+
+.mud-gantt-sync-task-row-content > * {
+    width: 100%;
+}
+
+.mud-gantt-sync-task-list-header ::deep .mud-grid,
+.mud-gantt-sync-task-row-content ::deep .mud-grid {
+    width: 100%;
+    margin: 0;
+}
+
+.mud-gantt-sync-task-list-header ::deep .mud-grid-item,
+.mud-gantt-sync-task-row-content ::deep .mud-grid-item {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.mud-gantt-sync-task-row-content ::deep .mud-typography {
+    line-height: 1.1;
+}
+
+.mud-gantt-sync-task-row-content ::deep .mud-typography-caption {
+    font-size: 0.72rem;
+}
+
+.mud-gantt-sync-chart-panel {
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.mud-gantt-sync-chart-host {
+    min-height: 0;
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
+.mud-gantt-sync-timeline-slider {
+    padding: 0.35rem 0.75rem 0.6rem;
+    background: var(--mud-palette-surface);
+}
+
+.mud-gantt-sync-timeline-slider-top {
+    border-bottom: 1px solid var(--mud-palette-divider);
+    padding-top: 0.6rem;
+    padding-bottom: 0.35rem;
+}
+
+.mud-gantt-sync-timeline-slider-control {
+    flex: 1 1 auto;
+}

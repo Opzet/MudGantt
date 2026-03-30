@@ -9,7 +9,7 @@
 
 <MudThemeProvider IsDarkMode="@_darkMode" />
 
-<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+<MudContainer MaxWidth="MaxWidth.False" Class="gantt-home-page mt-4 pa-0">
     
     <DemoPageHeader Title="Gantt Chart with Synchronised Task List"
                     Description="Real-time task list and inline editing across a synchronized Gantt and details workflow."
@@ -51,65 +51,163 @@
                            OnClearColors="ClearColors" />
     </MudCollapse>
 
-    <!-- Main Split View: Task List + Gantt Chart -->
-    <MudPaper Elevation="3" Class="gantt-split-surface">
-        <MudStack Row Class="gantt-split-stack">
-            
-            <!-- Task List Panel -->
-            @if (!_collapseTaskList)
-            {
-                <HomeTaskListPanel Tasks="FilteredTasks.ToList()"
-                                   SelectedTask="_selectedTask"
-                                   AttendanceMode="_attendanceMode"
-                                   PanelStyle="@TaskListPanelStyle"
-                                   OnSelectTask="SelectTask"
-                                   OnEditTask="EditTaskDialog" />
-            }
+    <MudPaper Elevation="0" Class="pa-3 mb-3 gantt-home-layout-toolbar">
+        <HomeStatisticsPanel Tasks="_tasks" />
+        
+       
+        <!-- Task Details Card (shown when task is selected) -->
+        <HomeTaskDetailsCard Task="_selectedTask"
+                             Tasks="_tasks"
+                             ReadOnly="_readOnly"
+                             IsBusy="_isBusy"
+                             OnSave="SaveSelectedTaskAsync"
+                             OnClose="CloseTaskDetails" />
 
-            <!-- Gantt Chart Panel -->
-            <MudPaper Elevation="0" Class="flex-grow-1 gantt-chart-panel">
-                <MudGanttChart @ref="_mudGanttChart"
-                               TaskClicked="OnTaskClicked"
-                               @bind-Tasks="@_tasks" 
-                               Events="@_events" 
-                               Color="@_color" 
-                               Variant="@_variant" 
-                               ReadOnly="@_readOnly" 
-                               Dense="@_dense" 
-                               Size="@_size"
-                               TaskDatesChanged="OnTaskDatesChanged"
-                               TaskProgressChanged="OnTaskProgressChanged">
-
-                    <TaskContextMenu>
-                        <MudMenuItem Icon="@Icons.Material.Filled.ZoomIn" OnClick="ZoomIn">Zoom in</MudMenuItem>
-                        <MudMenuItem Icon="@Icons.Material.Filled.ZoomOut" OnClick="ZoomOut">Zoom out</MudMenuItem>
-                        <MudMenuItem Icon="@Icons.Material.Filled.FitScreen" OnClick="ResetZoom">Reset zoom</MudMenuItem>
-                        <MudDivider />
-                        @if(context is not null)
-                        {
-                            <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="() => EditTaskDialog(context)">Edit Task</MudMenuItem>
-                            <MudMenuItem Icon="@Icons.Material.Filled.ColorLens" OnClick="() => MakeTaskBlue(context)">Make it blue</MudMenuItem>
-                            <MudMenuItem Icon="@Icons.Material.Filled.ContentCopy" OnClick="() => DuplicateTaskAsync(context)">Duplicate Task</MudMenuItem>
-                            <MudDivider />
-                            <MudMenuItem Icon="@Icons.Material.Outlined.Delete" IconColor="Color.Error" OnClick="() => DeleteTaskAsync(context)">Delete @context.Name</MudMenuItem>
-                        }
-                    </TaskContextMenu>
-
-                </MudGanttChart>
-            </MudPaper>
-
-        </MudStack>
+        
     </MudPaper>
 
-    <!-- Task Details Card (shown when task is selected) -->
-    <HomeTaskDetailsCard Task="_selectedTask"
-                         Tasks="_tasks"
-                         ReadOnly="_readOnly"
-                         IsBusy="_isBusy"
-                         OnSave="SaveSelectedTaskAsync"
-                         OnClose="CloseTaskDetails" />
+    <!-- Main Split View: Task List + Gantt Chart -->
+    <MudGanttSynchronizedView @ref="_synchronizedView"
+                              Tasks="@_tasks"
+                              TasksChanged="@(tasks => _tasks = tasks)"
+                              SelectedTask="@_selectedTask"
+                              SelectedTaskChanged="@(task => _selectedTask = task)"
+                              TaskListTasks="FilteredTasks.ToList()"
+                              Events="@_events"
+                              Color="@_color"
+                              Variant="@_variant"
+                              ReadOnly="@_readOnly"
+                              Dense="@_dense"
+                              Size="@_size"
+                              LayoutMetrics="@ChartLayoutMetrics"
+                              CollapseTaskList="@_collapseTaskList"
+                              TaskListWidth="@TaskListPanelWidth"
+                              Class="mb-4"
+                              Style="@SynchronizedViewStyle"
+                              TaskClicked="OnTaskClicked"
+                              TaskRowDoubleClick="EditTaskDialog"
+                              TaskDatesChanged="OnTaskDatesChanged"
+                              TaskProgressChanged="OnTaskProgressChanged">
 
-    <HomeStatisticsPanel Tasks="_tasks" />
+        <TaskListHeader>
+            @if (_attendanceMode)
+            {
+                <MudGrid Spacing="1">
+                    <MudItem xs="2">
+                        <MudText Typo="Typo.subtitle2" Align="Align.Center"><strong>#</strong></MudText>
+                    </MudItem>
+                    <MudItem xs="10">
+                        <MudText Typo="Typo.subtitle2"><strong>Name / Attendance</strong></MudText>
+                    </MudItem>
+                </MudGrid>
+            }
+            else
+            {
+                <MudGrid Spacing="1">
+                    <MudItem xs="1">
+                        <MudText Typo="Typo.subtitle2" Align="Align.Center"><strong>#</strong></MudText>
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudText Typo="Typo.subtitle2"><strong>Task Name</strong></MudText>
+                    </MudItem>
+                    <MudItem xs="2">
+                        <MudText Typo="Typo.subtitle2"><strong>Start</strong></MudText>
+                    </MudItem>
+                    <MudItem xs="2">
+                        <MudText Typo="Typo.subtitle2"><strong>End</strong></MudText>
+                    </MudItem>
+                    <MudItem xs="1">
+                        <MudText Typo="Typo.subtitle2" Align="Align.Center"><strong>Days</strong></MudText>
+                    </MudItem>
+                    <MudItem xs="2">
+                        <MudText Typo="Typo.subtitle2" Align="Align.Center"><strong>Progress</strong></MudText>
+                    </MudItem>
+                </MudGrid>
+            }
+        </TaskListHeader>
+
+        <TaskListRowTemplate Context="row">
+            @if (_attendanceMode)
+            {
+                <MudGrid Spacing="1">
+                    <MudItem xs="2">
+                        <MudText Typo="Typo.body2" Align="Align.Center" Class="font-weight-medium">
+                            @(row.Index + 1)
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="10">
+                        <MudText Typo="Typo.body2">@row.Task.Name</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            In: @(row.Task.StartDate?.ToString("HH:mm") ?? "-") | Out: @(row.Task.EndDate?.ToString("HH:mm") ?? "-")
+                        </MudText>
+                    </MudItem>
+                </MudGrid>
+            }
+            else
+            {
+                <MudGrid Spacing="1">
+                    <MudItem xs="1">
+                        <MudText Typo="Typo.body2" Align="Align.Center" Class="font-weight-medium">
+                            @(row.Index + 1)
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="4">
+                        <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                            @if (!string.IsNullOrEmpty(row.Task.Color))
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small" Style="@($"color: {row.Task.Color};")" />
+                            }
+                            <MudText Typo="Typo.body2" Class="flex-grow-1">@row.Task.Name</MudText>
+                        </MudStack>
+                    </MudItem>
+                    <MudItem xs="2">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@(row.Task.StartDate?.ToString("MM/dd/yy") ?? "-")</MudText>
+                    </MudItem>
+                    <MudItem xs="2">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@(row.Task.EndDate?.ToString("MM/dd/yy") ?? "-")</MudText>
+                    </MudItem>
+                    <MudItem xs="1">
+                        <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Info">@HomePageSupport.GetDuration(row.Task)</MudText>
+                    </MudItem>
+                    <MudItem xs="2">
+                        <MudStack Spacing="0" AlignItems="AlignItems.Center">
+                            <MudProgressLinear Color="@HomePageSupport.GetProgressColor(row.Task)"
+                                               Value="@((row.Task.Progress ?? 0) * 100)"
+                                               Size="Size.Small"
+                                               Style="width: 100%;" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@((row.Task.Progress ?? 0).ToString("P0"))</MudText>
+                        </MudStack>
+                    </MudItem>
+                </MudGrid>
+            }
+        </TaskListRowTemplate>
+
+        <TaskContextMenu>
+            <MudMenuItem Icon="@Icons.Material.Filled.ZoomIn" OnClick="ZoomIn">Zoom in</MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.ZoomOut" OnClick="ZoomOut">Zoom out</MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.FitScreen" OnClick="ResetZoom">Reset zoom</MudMenuItem>
+            <MudDivider />
+            @if(context is not null)
+            {
+                <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="() => EditTaskDialog(context)">Edit Task</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.ColorLens" OnClick="() => MakeTaskBlue(context)">Make it blue</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.ContentCopy" OnClick="() => DuplicateTaskAsync(context)">Duplicate Task</MudMenuItem>
+                <MudDivider />
+                <MudMenuItem Icon="@Icons.Material.Outlined.Delete" IconColor="Color.Error" OnClick="() => DeleteTaskAsync(context)">Delete @context.Name</MudMenuItem>
+            }
+        </TaskContextMenu>
+
+        <EmptyTaskListContent>
+            <MudPaper Elevation="0" Class="pa-8 text-center">
+                <MudIcon Icon="@Icons.Material.Filled.InsertDriveFile" Size="Size.Large" Color="Color.Secondary" />
+                <MudText Typo="Typo.h6" Color="Color.Secondary">No tasks available</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Click "Add Task" to create a new task</MudText>
+            </MudPaper>
+        </EmptyTaskListContent>
+
+    </MudGanttSynchronizedView>
+
+
 
 </MudContainer>
 

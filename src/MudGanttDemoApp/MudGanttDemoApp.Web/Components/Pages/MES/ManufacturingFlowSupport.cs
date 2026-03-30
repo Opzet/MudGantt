@@ -1,8 +1,10 @@
 using MudBlazor;
+
 using MudGantt;
+
 using MudGanttDemoApp.Web.ManufacturingApi;
 
-namespace MudGanttDemoApp.Web.Components.Pages;
+namespace MudGanttDemoApp.Web.Components.Pages.MES;
 
 internal static class ManufacturingFlowSupport
 {

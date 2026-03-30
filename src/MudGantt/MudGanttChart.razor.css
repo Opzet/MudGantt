@@ -1,9 +1,17 @@
-﻿.mud-gantt {
+﻿.mud-gannt-container {
+    height: 100%;
+    min-height: 0;
+}
+
+.mud-gantt {
     width: 100%;
     height: 100%;
     min-height: 100px;
     position: relative;
-    overflow: auto;
+    overflow-x: scroll;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable both-edges;
 
     --clr-normal: var(--mud-palette-surface);
     --clr-darken: var(--mud-palette-surface-darken);
@@ -16,6 +24,24 @@
     background: var(--mud-palette-background);
 
     touch-action: none;
+}
+
+.mud-gantt::-webkit-scrollbar {
+    height: 12px;
+    width: 12px;
+}
+
+.mud-gantt::-webkit-scrollbar-track {
+    background: var(--mud-palette-background-grey);
+}
+
+.mud-gantt::-webkit-scrollbar-thumb {
+    background: var(--mud-palette-divider);
+    border-radius: 8px;
+}
+
+.mud-gantt::-webkit-scrollbar-thumb:hover {
+    background: var(--mud-palette-text-secondary);
 }
 
 .mud-gantt ::deep svg {
@@ -240,6 +266,15 @@
 
 .mud-gantt ::deep line[data-type="today-line"] {
     stroke: var(--clr-today);
+    stroke-width: 2;
+    stroke-dasharray: 6 4;
+    opacity: 0.95;
+}
+
+.mud-gantt ::deep text[data-type="today-label"] {
+    fill: var(--clr-today);
+    font-size: 8pt;
+    font-weight: 700;
 }
 
 .mud-gantt ::deep line[data-type="actual-progress-line"] {

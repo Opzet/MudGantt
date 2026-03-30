@@ -1,8 +1,10 @@
 using MudBlazor;
+
 using MudGantt;
+
 using MudGanttDemoApp.Web.SchedulerApi;
 
-namespace MudGanttDemoApp.Web.Components.Pages;
+namespace MudGanttDemoApp.Web.Components.Pages.MES;
 
 public partial class RosterAdvanced
 {

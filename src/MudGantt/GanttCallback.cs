@@ -43,4 +43,10 @@ internal class GanttCallback
     {
         await _chart.OnProgressChangedAsync(id, progress);
     }
+
+    [JSInvokable]
+    public async Task OnHorizontalScrollChangedAsync(double scrollLeft, double maxScrollLeft)
+    {
+        await _chart.OnHorizontalScrollChangedAsync(scrollLeft, maxScrollLeft);
+    }
 }

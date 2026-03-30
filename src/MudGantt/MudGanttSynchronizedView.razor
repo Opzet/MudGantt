@@ -1,0 +1,176 @@
+@namespace MudGantt
+
+<MudPaper Elevation="@Elevation" Class="@ContainerClassname" Style="@Style">
+    <MudStack Row Class="mud-gantt-sync-stack">
+        @if (!CollapseTaskList)
+        {
+            <div id="@TaskListScrollHostId" class="mud-gantt-sync-task-list-panel" style="@ResolvedTaskListStyle" tabindex="-1">
+                <div class="mud-gantt-sync-task-list-header" style="@($"height: {ResolvedLayoutMetrics.AxisHeight}px;")">
+                    @TaskListHeader
+                </div>
+
+                @if (TaskListItems.Count == 0)
+                {
+                    if (EmptyTaskListContent is not null)
+                    {
+                        @EmptyTaskListContent
+                    }
+                    else
+                    {
+                        <MudPaper Elevation="0" Class="pa-8 text-center">
+                            <MudIcon Icon="@Icons.Material.Filled.InsertDriveFile" Size="Size.Large" Color="Color.Secondary" />
+                            <MudText Typo="Typo.h6" Color="Color.Secondary">No tasks available</MudText>
+                        </MudPaper>
+                    }
+                }
+                else
+                {
+                    @foreach (var row in IndexedTasks)
+                    {
+                        <div @key="row.Task.Id"
+                             class="@GetTaskRowClass(row)"
+                             style="@($"height: {ResolvedLayoutMetrics.RowHeight}px;")"
+                             tabindex="0"
+                             role="button"
+                             aria-selected="@row.IsSelected"
+                             @onclick="() => OnTaskRowClickedAsync(row.Task)"
+                             @onkeydown="args => OnTaskRowKeyDownAsync(args, row.Task)"
+                             @ondblclick="() => OnTaskRowDoubleClickAsync(row.Task)">
+                            <div class="mud-gantt-sync-task-row-content">
+                                @TaskListRowTemplate(row)
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        }
+
+        <MudPaper Elevation="0" Class="flex-grow-1 mud-gantt-sync-chart-panel">
+            <div class="mud-gantt-sync-chart-host">
+                <MudGanttChart @ref="_mudGanttChart"
+                               Tasks="@Tasks"
+                               TasksChanged="@TasksChanged"
+                               Events="@Events"
+                               RangeOverlays="@RangeOverlays"
+                               Color="@Color"
+                               Variant="@Variant"
+                               ReadOnly="@ReadOnly"
+                               Dense="@Dense"
+                               Size="@Size"
+                               LayoutMetrics="@ResolvedLayoutMetrics"
+                               SyncVerticalScrollSelector="@TaskListScrollSelector"
+                               SelectedTaskId="@SelectedTaskId"
+                               SelectedTaskIdChanged="OnSelectedTaskIdChangedAsync"
+                               ScrollSelectedIntoView="@ScrollSelectedIntoView"
+                               HighlightedTaskIds="@HighlightedTaskIds"
+                               DimNonHighlighted="@DimNonHighlighted"
+                               TaskClicked="OnTaskClickedAsync"
+                               TaskDatesChanged="@TaskDatesChanged"
+                               TaskProgressChanged="@TaskProgressChanged"
+                               Class="@ChartClass"
+                               Style="@ChartStyle">
+
+                    <TaskContextMenu Context="task">
+                        @if (TaskContextMenu is not null)
+                        {
+                            @TaskContextMenu(task)
+                        }
+                    </TaskContextMenu>
+
+                </MudGanttChart>
+            </div>
+        </MudPaper>
+    </MudStack>
+</MudPaper>
+
+@code {
+    private readonly string _guid = Guid.NewGuid().ToString("N");
+    private MudGanttChart _mudGanttChart = default!;
+
+    private string TaskListScrollHostId => $"mud-gantt-sync-list-{_guid}";
+    private string TaskListScrollSelector => $"#{TaskListScrollHostId}";
+    private string? SelectedTaskId => SelectedTask?.Id;
+    private MudGanttLayoutMetrics ResolvedLayoutMetrics => LayoutMetrics ?? MudGanttLayoutMetrics.From(Dense, Size);
+    private IReadOnlyList<MudGanttTask> TaskListItems => TaskListTasks ?? Tasks;
+    private List<MudGanttTaskRowContext> IndexedTasks => TaskListItems
+        .Select((task, index) => new MudGanttTaskRowContext(task, index, SelectedTask?.Id == task.Id))
+        .ToList();
+
+    private string ContainerClassname => new CssBuilder("mud-gantt-sync-surface")
+        .AddClass(Class, !string.IsNullOrWhiteSpace(Class))
+        .Build();
+
+    private string ResolvedTaskListStyle => string.IsNullOrWhiteSpace(TaskListStyle)
+        ? $"width: {TaskListWidth};"
+        : $"width: {TaskListWidth}; {TaskListStyle}";
+
+    [Parameter] public IReadOnlyList<MudGanttTask> Tasks { get; set; } = [];
+    [Parameter] public EventCallback<IReadOnlyList<MudGanttTask>> TasksChanged { get; set; }
+    [Parameter] public IReadOnlyList<MudGanttTask>? TaskListTasks { get; set; }
+    [Parameter] public IReadOnlyList<MudGanttEvent>? Events { get; set; }
+    [Parameter] public IReadOnlyList<MudGanttRangeOverlay>? RangeOverlays { get; set; }
+    [Parameter] public MudGanttTask? SelectedTask { get; set; }
+    [Parameter] public EventCallback<MudGanttTask?> SelectedTaskChanged { get; set; }
+    [Parameter, EditorRequired] public RenderFragment<MudGanttTaskRowContext> TaskListRowTemplate { get; set; } = default!;
+    [Parameter] public RenderFragment? TaskListHeader { get; set; }
+    [Parameter] public RenderFragment? EmptyTaskListContent { get; set; }
+    [Parameter] public RenderFragment<MudGanttTask?>? TaskContextMenu { get; set; }
+    [Parameter] public EventCallback<MudGanttTask> TaskClicked { get; set; }
+    [Parameter] public EventCallback<MudGanttTask> TaskRowDoubleClick { get; set; }
+    [Parameter] public EventCallback<MudGanttTask> TaskDatesChanged { get; set; }
+    [Parameter] public EventCallback<MudGanttTask> TaskProgressChanged { get; set; }
+    [Parameter] public Color Color { get; set; } = Color.Primary;
+    [Parameter] public Variant Variant { get; set; } = Variant.Filled;
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool Dense { get; set; }
+    [Parameter] public Size Size { get; set; } = Size.Medium;
+    [Parameter] public MudGanttLayoutMetrics? LayoutMetrics { get; set; }
+    [Parameter] public bool CollapseTaskList { get; set; }
+    [Parameter] public string TaskListWidth { get; set; } = "55%";
+    [Parameter] public string? TaskListStyle { get; set; }
+    [Parameter] public int TaskListOverscanCount { get; set; } = 6;
+    [Parameter] public bool ScrollSelectedIntoView { get; set; } = true;
+    [Parameter] public IReadOnlyList<string>? HighlightedTaskIds { get; set; }
+    [Parameter] public bool DimNonHighlighted { get; set; }
+    [Parameter] public int Elevation { get; set; } = 3;
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public string? ChartClass { get; set; }
+    [Parameter] public string? ChartStyle { get; set; }
+
+    public Task ZoomInAsync(double amount = 1000) => _mudGanttChart.ZoomInAsync(amount);
+    public Task ZoomOutAsync(double amount = 1000) => _mudGanttChart.ZoomOutAsync(amount);
+    public Task ResetZoomAsync() => _mudGanttChart.ResetZoomAsync();
+
+    private string GetTaskRowClass(MudGanttTaskRowContext row) => new CssBuilder("mud-gantt-sync-task-row")
+        .AddClass("mud-gantt-sync-task-row-selected", row.IsSelected)
+        .Build();
+
+    private async Task OnTaskRowClickedAsync(MudGanttTask task)
+    {
+        await SelectedTaskChanged.InvokeAsync(task);
+        await TaskClicked.InvokeAsync(task);
+    }
+
+    private async Task OnTaskRowKeyDownAsync(KeyboardEventArgs args, MudGanttTask task)
+    {
+        if (args.Key is "Enter" or " ")
+        {
+            await OnTaskRowClickedAsync(task);
+        }
+    }
+
+    private async Task OnTaskClickedAsync(MudGanttTask task)
+    {
+        await SelectedTaskChanged.InvokeAsync(task);
+        await TaskClicked.InvokeAsync(task);
+    }
+
+    private Task OnTaskRowDoubleClickAsync(MudGanttTask task) => TaskRowDoubleClick.InvokeAsync(task);
+
+    private Task OnSelectedTaskIdChangedAsync(string? taskId)
+    {
+        var task = taskId is null ? null : Tasks.FirstOrDefault(item => item.Id == taskId);
+        return SelectedTaskChanged.InvokeAsync(task);
+    }
+}

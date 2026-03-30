@@ -1,4 +1,4 @@
-namespace MudGanttDemoApp.Web.Components.Pages;
+namespace MudGanttDemoApp.Web.Components.Pages.MES;
 
 internal sealed record CapabilityRow(string Area, string Capability, string Status, string Evidence, string Notes);
 internal sealed record TestRubricRow(string Capability, string Scenario, string Verification, string Status);

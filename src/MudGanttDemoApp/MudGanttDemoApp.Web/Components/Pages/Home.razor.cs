@@ -15,11 +15,12 @@ public partial class Home
     private bool _showSettings;
     private bool _collapseTaskList;
     private bool _attendanceMode;
-    private MudGanttChart _mudGanttChart = default!;
+    private MudGanttSynchronizedView _synchronizedView = default!;
     private MudGanttTask? _selectedTask;
     private HttpClient _apiClient = default!;
     private bool _isBusy;
     private string _search = string.Empty;
+    private double _taskListWidthPercent = 15;
     private IReadOnlyList<MudGanttEvent> _events = HomePageSupport.CreateDefaultEvents();
     private IReadOnlyList<MudGanttTask> _tasks = HomePageSupport.CreateDefaultTasks();
 
@@ -27,7 +28,19 @@ public partial class Home
         ? _tasks
         : _tasks.Where(task => task.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
 
-    private string TaskListPanelStyle => _attendanceMode ? "width: 28%;" : "width: 55%;";
+   
+    private string TaskListPanelWidth => $"{_taskListWidthPercent:0}%";
+    private string SynchronizedViewStyle => _selectedTask is null
+        ? "height: clamp(420px, calc(100vh - 380px), 760px); min-height: 420px;"
+        : "height: clamp(360px, calc(100vh - 520px), 620px); min-height: 360px;";
+    private MudGanttLayoutMetrics ChartLayoutMetrics => _attendanceMode
+        ? MudGanttLayoutMetrics.From(_dense, _size) with
+        {
+            AxisHeight = 44,
+            TaskHeight = 40,
+            TaskSpacing = 4
+        }
+        : MudGanttLayoutMetrics.From(_dense, _size);
 
     protected override async Task OnInitializedAsync()
     {
@@ -36,9 +49,9 @@ public partial class Home
         await ReloadTasksAsync();
     }
 
-    private Task ZoomIn() => _mudGanttChart.ZoomInAsync();
-    private Task ZoomOut() => _mudGanttChart.ZoomOutAsync();
-    private Task ResetZoom() => _mudGanttChart.ResetZoomAsync();
+    private Task ZoomIn() => _synchronizedView.ZoomInAsync();
+    private Task ZoomOut() => _synchronizedView.ZoomOutAsync();
+    private Task ResetZoom() => _synchronizedView.ResetZoomAsync();
     private Task ToggleSettings()
     {
         _showSettings = !_showSettings;
@@ -120,11 +133,8 @@ public partial class Home
         snackbar.Add($"Added '{mapped.Name}'", Severity.Success);
     }
 
-    private void SelectTask(MudGanttTask task) => _selectedTask = task;
-
     private void OnTaskClicked(MudGanttTask task)
     {
-        _selectedTask = task;
         snackbar.Add($"'{task.Name}' clicked", Severity.Info);
     }
 
@@ -133,7 +143,7 @@ public partial class Home
 
     private void EditTaskDialog(MudGanttTask task)
     {
-        _selectedTask = task;
+        SetSelectedTask(task);
         snackbar.Add($"Editing '{task.Name}' - Use the details panel below", Severity.Info);
     }
 
@@ -217,9 +227,11 @@ public partial class Home
 
     private Task CloseTaskDetails()
     {
-        _selectedTask = null;
+        SetSelectedTask(null);
         return Task.CompletedTask;
     }
+
+    private void SetSelectedTask(MudGanttTask? task) => _selectedTask = task;
 
     private void ClearColors()
     {

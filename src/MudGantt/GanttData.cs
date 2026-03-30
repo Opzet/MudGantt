@@ -55,5 +55,15 @@ namespace MudGantt
         /// If true, tasks outside the selected/highlighted set are visually dimmed.
         /// </summary>
         public bool DimNonHighlighted { get; set; }
+
+        /// <summary>
+        /// Shared row and header sizing used by the chart.
+        /// </summary>
+        public required MudGanttLayoutMetrics LayoutMetrics { get; set; }
+
+        /// <summary>
+        /// Optional selector for a vertically synchronized external scroll surface.
+        /// </summary>
+        public string? SyncVerticalScrollSelector { get; set; }
     }
 }
