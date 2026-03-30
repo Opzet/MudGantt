@@ -91,24 +91,24 @@
         {
             Id = "2208",
             Name = "2208 : Armin Francisco",
-            StartDate = new DateTimeOffset(2025, 1, 1, 0, 30, 0, TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025, 1, 1, 11, 56, 0, TimeSpan.Zero),
+            StartDate = AttendanceTime(0, 30),
+            EndDate = AttendanceTime(11, 56),
             Color = "#9ec9d1"
         },
         new MudGanttTask
         {
             Id = "2147",
             Name = "2147 : Rodel Gonzales",
-            StartDate = new DateTimeOffset(2025, 1, 1, 0, 30, 0, TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025, 1, 1, 11, 40, 0, TimeSpan.Zero),
+            StartDate = AttendanceTime(0, 30),
+            EndDate = AttendanceTime(11, 40),
             Color = "#9ec9d1"
         },
         new MudGanttTask
         {
             Id = "3633",
             Name = "3633 : Kristopher Ralph",
-            StartDate = new DateTimeOffset(2025, 1, 1, 4, 21, 0, TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025, 1, 1, 7, 45, 0, TimeSpan.Zero),
+            StartDate = AttendanceTime(4, 21),
+            EndDate = AttendanceTime(7, 45),
             Color = "#9ec9d1"
         }
     ];
@@ -193,6 +193,12 @@
         var input = startDate?.ToString("HH:mm") ?? "--:--";
         var output = endDate?.ToString("HH:mm") ?? "--:--";
         return $"{employeeId} : {name}    In: {input} | Out: {output}";
+    }
+
+    private static DateTimeOffset AttendanceTime(int hour, int minute)
+    {
+        var now = DateTimeOffset.Now;
+        return new DateTimeOffset(now.Year, now.Month, now.Day, hour, minute, 0, now.Offset);
     }
 
     private int GetEmployeeListWidth()

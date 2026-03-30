@@ -39,15 +39,18 @@
 @code {
     private readonly IReadOnlyList<CalendarExampleItem> _items =
     [
-        new CalendarExampleItem { Start = new DateTime(2025, 10, 1, 9, 0, 0), Text = "Client A kickoff" },
-        new CalendarExampleItem { Start = new DateTime(2025, 10, 3, 13, 0, 0), Text = "Steel delivery" },
-        new CalendarExampleItem { Start = new DateTime(2025, 10, 4, 8, 0, 0), Text = "Machine calibration" },
-        new CalendarExampleItem { Start = new DateTime(2025, 10, 7, 15, 30, 0), Text = "Customer design signoff" },
-        new CalendarExampleItem { Start = new DateTime(2025, 10, 9, 7, 30, 0), Text = "Factory maintenance window" },
-        new CalendarExampleItem { Start = new DateTime(2025, 10, 11, 10, 0, 0), Text = "Client B FAT" },
-        new CalendarExampleItem { Start = new DateTime(2025, 10, 14, 14, 0, 0), Text = "Procurement review" },
-        new CalendarExampleItem { Start = new DateTime(2025, 10, 18, 9, 0, 0), Text = "Line 2 installation" },
-        new CalendarExampleItem { Start = new DateTime(2025, 10, 22, 11, 0, 0), Text = "CNC run approval" },
-        new CalendarExampleItem { Start = new DateTime(2025, 10, 27, 16, 0, 0), Text = "Executive schedule review" }
+        new CalendarExampleItem { Start = PlanningDate(0, 9), Text = "Client A kickoff" },
+        new CalendarExampleItem { Start = PlanningDate(2, 13), Text = "Steel delivery" },
+        new CalendarExampleItem { Start = PlanningDate(3, 8), Text = "Machine calibration" },
+        new CalendarExampleItem { Start = PlanningDate(6, 15, 30), Text = "Customer design signoff" },
+        new CalendarExampleItem { Start = PlanningDate(8, 7, 30), Text = "Factory maintenance window" },
+        new CalendarExampleItem { Start = PlanningDate(10, 10), Text = "Client B FAT" },
+        new CalendarExampleItem { Start = PlanningDate(13, 14), Text = "Procurement review" },
+        new CalendarExampleItem { Start = PlanningDate(17, 9), Text = "Line 2 installation" },
+        new CalendarExampleItem { Start = PlanningDate(21, 11), Text = "CNC run approval" },
+        new CalendarExampleItem { Start = PlanningDate(26, 16), Text = "Executive schedule review" }
     ];
+
+    private static DateTime PlanningDate(int dayOffset, int hour, int minute = 0) =>
+        DateTime.Today.AddDays(dayOffset).AddHours(hour).AddMinutes(minute);
 }

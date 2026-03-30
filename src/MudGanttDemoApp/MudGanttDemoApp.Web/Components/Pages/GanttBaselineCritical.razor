@@ -58,10 +58,16 @@
 @code {
     private MudGanttChart _chart = default!;
     private readonly IReadOnlyList<MudGanttTask> _tasks = GanttExampleData.CreateBaselineCriticalTasks();
-    private readonly IReadOnlyList<MudGanttEvent> _events =
-    [
-        new MudGanttEvent { Id = "ship", Name = "Ship", Date = new DateTimeOffset(2025, 11, 11, 16, 0, 0, TimeSpan.Zero) }
-    ];
+    private readonly IReadOnlyList<MudGanttEvent> _events;
+
+    public GanttBaselineCritical()
+    {
+        var shipDate = _tasks.Max(task => task.EndDate) ?? DateTimeOffset.Now;
+        _events =
+        [
+            new MudGanttEvent { Id = "ship", Name = "Ship", Date = shipDate.AddHours(1) }
+        ];
+    }
 
     private static string FormatRange(DateTimeOffset? start, DateTimeOffset? end) => $"{start:dd MMM HH:mm} - {end:dd MMM HH:mm}";
     private Task ZoomIn() => _chart.ZoomInAsync(20);

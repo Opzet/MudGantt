@@ -22,8 +22,17 @@
 
 @code {
     private readonly IReadOnlyList<MudGanttTask> _tasks = GanttExampleData.CreateDependencyTasks();
-    private readonly IReadOnlyList<MudGanttEvent> _events =
-    [
-        new MudGanttEvent { Id = "review", Name = "Architecture Review", Date = new DateTimeOffset(2025, 8, 6, 13, 0, 0, TimeSpan.Zero) }
-    ];
+    private readonly IReadOnlyList<MudGanttEvent> _events;
+
+    public GanttDependencies()
+    {
+        var reviewDate = _tasks.LastOrDefault(task => task.Id == "web")?.EndDate
+            ?? _tasks.Max(task => task.EndDate)
+            ?? DateTimeOffset.Now;
+
+        _events =
+        [
+            new MudGanttEvent { Id = "review", Name = "Architecture Review", Date = reviewDate.AddHours(-4) }
+        ];
+    }
 }

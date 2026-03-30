@@ -49,12 +49,12 @@
                            DarkModeChanged="@(value => _darkMode = value)"
                            OnAssignColors="AssignColors"
                            OnClearColors="ClearColors" />
+        <HomeStatisticsPanel Tasks="_tasks" />
     </MudCollapse>
 
     <MudPaper Elevation="0" Class="pa-3 mb-3 gantt-home-layout-toolbar">
-        <HomeStatisticsPanel Tasks="_tasks" />
-        
        
+        
         <!-- Task Details Card (shown when task is selected) -->
         <HomeTaskDetailsCard Task="_selectedTask"
                              Tasks="_tasks"
@@ -62,8 +62,6 @@
                              IsBusy="_isBusy"
                              OnSave="SaveSelectedTaskAsync"
                              OnClose="CloseTaskDetails" />
-
-        
     </MudPaper>
 
     <!-- Main Split View: Task List + Gantt Chart -->

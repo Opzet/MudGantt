@@ -68,76 +68,95 @@ internal static class HomePageSupport
         return $"{average:F1}%";
     }
 
-    public static IReadOnlyList<MudGanttEvent> CreateDefaultEvents() =>
-    [
-        new MudGanttEvent { Id = "code-complete", Name = "Code Complete", Date = new DateTimeOffset(2025, 6, 26, 18, 0, 0, TimeSpan.Zero) },
-        new MudGanttEvent { Id = "general-availability", Name = "GA", Date = new DateTimeOffset(2025, 7, 3, 18, 0, 0, TimeSpan.Zero) }
-    ];
+    public static IReadOnlyList<MudGanttEvent> CreateDefaultEvents()
+    {
+        var anchor = AnchorDay().AddDays(-2);
 
-    public static IReadOnlyList<MudGanttTask> CreateDefaultTasks() =>
-    [
-        new MudGanttTask
-        {
-            Id = "implementation-epic",
-            Name = "Gantt chart development",
-            StartDate = new DateTimeOffset(2025, 6, 24, 0, 0, 0, TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025, 6, 26, 18, 0, 0, TimeSpan.Zero),
-            Progress = 0.8
-        },
-        new MudGanttTask
-        {
-            Id = "implementation-js",
-            Name = "gantt.js",
-            StartDate = new DateTimeOffset(2025, 6, 24, 8, 0, 0, TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025, 6, 26, 16, 0, 0, TimeSpan.Zero),
-            Progress = 0.85,
-            Links = [new Link("implementation-epic", LinkType.StartToStart), new Link("implementation-epic", LinkType.FinishToFinish)]
-        },
-        new MudGanttTask
-        {
-            Id = "implementation-blazor",
-            Name = "Blazor component",
-            StartDate = new DateTimeOffset(2025, 6, 25, 0, 0, 0, TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025, 6, 26, 18, 0, 0, TimeSpan.Zero),
-            Progress = 0.95,
-            Links = [new Link("implementation-epic", LinkType.StartToStart), new Link("implementation-epic", LinkType.FinishToFinish)]
-        },
-        new MudGanttTask
-        {
-            Id = "unit-tests",
-            Name = "Unit Tests",
-            StartDate = new DateTimeOffset(2025, 6, 27, 9, 0, 0, TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025, 6, 27, 10, 0, 0, TimeSpan.Zero),
-            Links = [new Link("implementation-epic", LinkType.FinishToStart)],
-            Progress = 1.0
-        },
-        new MudGanttTask
-        {
-            Id = "integration-tests",
-            Name = "Integration Tests",
-            StartDate = new DateTimeOffset(2025, 6, 27, 9, 0, 0, TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025, 6, 27, 17, 0, 0, TimeSpan.Zero),
-            Links = [new Link("implementation-epic", LinkType.FinishToStart)],
-            Progress = 0.8
-        },
-        new MudGanttTask
-        {
-            Id = "bug-fixes",
-            Name = "Bug fixes",
-            Color = "#0d7694",
-            StartDate = new DateTimeOffset(2025, 6, 28, 0, 0, 0, TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025, 6, 29, 16, 0, 0, TimeSpan.Zero),
-            Progress = 0.35,
-            Links = [new Link("integration-tests", LinkType.FinishToStart), new Link("unit-tests", LinkType.FinishToStart)]
-        },
-        new MudGanttTask
-        {
-            Id = "release1",
-            Color = "#40B090",
-            Name = "Release nuget package",
-            StartDate = new DateTimeOffset(2025, 7, 2, 0, 0, 0, TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025, 7, 3, 0, 0, 0, TimeSpan.Zero),
-            Links = [new Link("bug-fixes", LinkType.FinishToStart)]
-        }
-    ];
+        return
+        [
+            new MudGanttEvent { Id = "code-complete", Name = "Code Complete", Date = At(anchor, 2, 18) },
+            new MudGanttEvent { Id = "general-availability", Name = "GA", Date = At(anchor, 9, 18) }
+        ];
+    }
+
+    public static IReadOnlyList<MudGanttTask> CreateDefaultTasks()
+    {
+        var anchor = AnchorDay().AddDays(-2);
+
+        return
+        [
+            new MudGanttTask
+            {
+                Id = "implementation-epic",
+                Name = "Gantt chart development",
+                StartDate = At(anchor, 0, 0),
+                EndDate = At(anchor, 2, 18),
+                Progress = 0.8
+            },
+            new MudGanttTask
+            {
+                Id = "implementation-js",
+                Name = "gantt.js",
+                StartDate = At(anchor, 0, 8),
+                EndDate = At(anchor, 2, 16),
+                Progress = 0.85,
+                Links = [new Link("implementation-epic", LinkType.StartToStart), new Link("implementation-epic", LinkType.FinishToFinish)]
+            },
+            new MudGanttTask
+            {
+                Id = "implementation-blazor",
+                Name = "Blazor component",
+                StartDate = At(anchor, 1, 0),
+                EndDate = At(anchor, 2, 18),
+                Progress = 0.95,
+                Links = [new Link("implementation-epic", LinkType.StartToStart), new Link("implementation-epic", LinkType.FinishToFinish)]
+            },
+            new MudGanttTask
+            {
+                Id = "unit-tests",
+                Name = "Unit Tests",
+                StartDate = At(anchor, 3, 9),
+                EndDate = At(anchor, 3, 10),
+                Links = [new Link("implementation-epic", LinkType.FinishToStart)],
+                Progress = 1.0
+            },
+            new MudGanttTask
+            {
+                Id = "integration-tests",
+                Name = "Integration Tests",
+                StartDate = At(anchor, 3, 9),
+                EndDate = At(anchor, 3, 17),
+                Links = [new Link("implementation-epic", LinkType.FinishToStart)],
+                Progress = 0.8
+            },
+            new MudGanttTask
+            {
+                Id = "bug-fixes",
+                Name = "Bug fixes",
+                Color = "#0d7694",
+                StartDate = At(anchor, 4, 0),
+                EndDate = At(anchor, 5, 16),
+                Progress = 0.35,
+                Links = [new Link("integration-tests", LinkType.FinishToStart), new Link("unit-tests", LinkType.FinishToStart)]
+            },
+            new MudGanttTask
+            {
+                Id = "release1",
+                Color = "#40B090",
+                Name = "Release nuget package",
+                StartDate = At(anchor, 8, 0),
+                EndDate = At(anchor, 9, 0),
+                Links = [new Link("bug-fixes", LinkType.FinishToStart)]
+            }
+        ];
+    }
+
+    private static DateTimeOffset AnchorDay()
+    {
+        var now = DateTimeOffset.Now;
+        return new DateTimeOffset(now.Year, now.Month, now.Day, 0, 0, 0, now.Offset);
+    }
+
+    private static DateTimeOffset At(DateTimeOffset anchor, int dayOffset, int hour, int minute = 0) =>
+        anchor.AddDays(dayOffset).AddHours(hour).AddMinutes(minute);
 }

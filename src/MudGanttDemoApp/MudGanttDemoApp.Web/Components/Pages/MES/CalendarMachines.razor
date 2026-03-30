@@ -55,25 +55,28 @@
 
     private readonly IReadOnlyList<CalendarExampleItem> _items =
     [
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 3, 6, 0, 0), Text = "Job 2501 · Client A", Machine = "CNC-01", JobId = "2501", Client = "Client A", Category = "Production" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 3, 14, 0, 0), Text = "Maintenance", Machine = "CNC-01", Category = "Maintenance" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 4, 7, 0, 0), Text = "Job 2508 · Client B", Machine = "CNC-01", JobId = "2508", Client = "Client B", Category = "Production" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 5, 8, 0, 0), Text = "Job 2514 · Client C", Machine = "CNC-02", JobId = "2514", Client = "Client C", Category = "Production" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 5, 13, 0, 0), Text = "Job 2515 · Client A", Machine = "CNC-02", JobId = "2515", Client = "Client A", Category = "Production" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 6, 9, 0, 0), Text = "Nest optimization", Machine = "Laser-01", Category = "Setup" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 6, 11, 0, 0), Text = "Job 2520 · Client D", Machine = "Laser-01", JobId = "2520", Client = "Client D", Category = "Production" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 7, 10, 0, 0), Text = "Batch coating · Client B", Machine = "Paint Booth", JobId = "2524", Client = "Client B", Category = "Production" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 8), Text = "Non-working day", Machine = "CNC-01", AllDay = true, Category = "Non-working" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 9), Text = "Non-working day", Machine = "CNC-01", AllDay = true, Category = "Non-working" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 8), Text = "Non-working day", Machine = "CNC-02", AllDay = true, Category = "Non-working" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 9), Text = "Non-working day", Machine = "CNC-02", AllDay = true, Category = "Non-working" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 8), Text = "Non-working day", Machine = "Laser-01", AllDay = true, Category = "Non-working" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 9), Text = "Non-working day", Machine = "Laser-01", AllDay = true, Category = "Non-working" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 8), Text = "Non-working day", Machine = "Paint Booth", AllDay = true, Category = "Non-working" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 9), Text = "Non-working day", Machine = "Paint Booth", AllDay = true, Category = "Non-working" }
+        new CalendarExampleItem { Start = MachineDate(0, 6), Text = "Job 2501 · Client A", Machine = "CNC-01", JobId = "2501", Client = "Client A", Category = "Production" },
+        new CalendarExampleItem { Start = MachineDate(0, 14), Text = "Maintenance", Machine = "CNC-01", Category = "Maintenance" },
+        new CalendarExampleItem { Start = MachineDate(1, 7), Text = "Job 2508 · Client B", Machine = "CNC-01", JobId = "2508", Client = "Client B", Category = "Production" },
+        new CalendarExampleItem { Start = MachineDate(2, 8), Text = "Job 2514 · Client C", Machine = "CNC-02", JobId = "2514", Client = "Client C", Category = "Production" },
+        new CalendarExampleItem { Start = MachineDate(2, 13), Text = "Job 2515 · Client A", Machine = "CNC-02", JobId = "2515", Client = "Client A", Category = "Production" },
+        new CalendarExampleItem { Start = MachineDate(3, 9), Text = "Nest optimization", Machine = "Laser-01", Category = "Setup" },
+        new CalendarExampleItem { Start = MachineDate(3, 11), Text = "Job 2520 · Client D", Machine = "Laser-01", JobId = "2520", Client = "Client D", Category = "Production" },
+        new CalendarExampleItem { Start = MachineDate(4, 10), Text = "Batch coating · Client B", Machine = "Paint Booth", JobId = "2524", Client = "Client B", Category = "Production" },
+        new CalendarExampleItem { Start = MachineDate(5), Text = "Non-working day", Machine = "CNC-01", AllDay = true, Category = "Non-working" },
+        new CalendarExampleItem { Start = MachineDate(6), Text = "Non-working day", Machine = "CNC-01", AllDay = true, Category = "Non-working" },
+        new CalendarExampleItem { Start = MachineDate(5), Text = "Non-working day", Machine = "CNC-02", AllDay = true, Category = "Non-working" },
+        new CalendarExampleItem { Start = MachineDate(6), Text = "Non-working day", Machine = "CNC-02", AllDay = true, Category = "Non-working" },
+        new CalendarExampleItem { Start = MachineDate(5), Text = "Non-working day", Machine = "Laser-01", AllDay = true, Category = "Non-working" },
+        new CalendarExampleItem { Start = MachineDate(6), Text = "Non-working day", Machine = "Laser-01", AllDay = true, Category = "Non-working" },
+        new CalendarExampleItem { Start = MachineDate(5), Text = "Non-working day", Machine = "Paint Booth", AllDay = true, Category = "Non-working" },
+        new CalendarExampleItem { Start = MachineDate(6), Text = "Non-working day", Machine = "Paint Booth", AllDay = true, Category = "Non-working" }
     ];
 
     private IEnumerable<CalendarExampleItem> FilteredItems => _items.Where(x => x.Machine == _selectedMachine);
 
     private void OnMachineChanged(string machine) => _selectedMachine = machine;
+
+    private static DateTime MachineDate(int dayOffset, int hour = 0, int minute = 0) =>
+        DateTime.Today.AddDays(dayOffset).AddHours(hour).AddMinutes(minute);
 }

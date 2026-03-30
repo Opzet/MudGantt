@@ -15,6 +15,8 @@ public sealed class InMemorySchedulerProjectStore : ISchedulerProjectStore
 
     private static SchedulerProjectDto CreateProject()
     {
+        var anchor = AnchorDay().AddDays(-1);
+
         var project = new SchedulerProjectDto
         {
             Id = "scheduler-pro-starter",
@@ -43,15 +45,15 @@ public sealed class InMemorySchedulerProjectStore : ISchedulerProjectStore
 
         project.Tasks =
         [
-            CreateTask("t-discovery", "Discovery", "Discovery", 2025, 10, 1, 8, 2025, 10, 2, 17, 1.0, 16, "#5b8def"),
-            CreateTask("t-architecture", "Architecture", "Design", 2025, 10, 3, 8, 2025, 10, 6, 17, 0.85, 24, "#7c4dff", new SchedulerTaskLinkDto { Id = "t-discovery", LinkType = LinkType.FinishToStart }),
-            CreateTask("t-api-core", "Core API", "Build", 2025, 10, 7, 8, 2025, 10, 10, 17, 0.75, 32, "#00a67e", new SchedulerTaskLinkDto { Id = "t-architecture", LinkType = LinkType.FinishToStart }),
-            CreateTask("t-api-security", "Security API", "Build", 2025, 10, 7, 8, 2025, 10, 9, 17, 0.55, 24, "#0f9d58", new SchedulerTaskLinkDto { Id = "t-architecture", LinkType = LinkType.FinishToStart }),
-            CreateTask("t-ui-shell", "UI Shell", "Build", 2025, 10, 7, 9, 2025, 10, 10, 17, 0.7, 30, "#ff9800", new SchedulerTaskLinkDto { Id = "t-architecture", LinkType = LinkType.FinishToStart }),
-            CreateTask("t-ui-workflows", "Workflow UI", "Build", 2025, 10, 10, 8, 2025, 10, 14, 17, 0.35, 40, "#fb8c00", new SchedulerTaskLinkDto { Id = "t-ui-shell", LinkType = LinkType.FinishToStart }, new SchedulerTaskLinkDto { Id = "t-api-core", LinkType = LinkType.StartToStart }),
-            CreateTask("t-integration", "Integration", "Validate", 2025, 10, 15, 8, 2025, 10, 16, 17, 0.15, 16, "#ef5350", new SchedulerTaskLinkDto { Id = "t-api-core", LinkType = LinkType.FinishToStart }, new SchedulerTaskLinkDto { Id = "t-ui-workflows", LinkType = LinkType.FinishToStart }),
-            CreateTask("t-uat", "UAT", "Validate", 2025, 10, 17, 9, 2025, 10, 20, 15, 0.0, 18, "#d81b60", new SchedulerTaskLinkDto { Id = "t-integration", LinkType = LinkType.FinishToStart }),
-            CreateTask("t-release", "Release", "Release", 2025, 10, 21, 10, 2025, 10, 21, 14, 0.0, 4, "#6a1b9a", new SchedulerTaskLinkDto { Id = "t-uat", LinkType = LinkType.FinishToStart })
+            CreateTask("t-discovery", "Discovery", "Discovery", anchor, 0, 8, 1, 17, 1.0, 16, "#5b8def"),
+            CreateTask("t-architecture", "Architecture", "Design", anchor, 2, 8, 4, 17, 0.85, 24, "#7c4dff", new SchedulerTaskLinkDto { Id = "t-discovery", LinkType = LinkType.FinishToStart }),
+            CreateTask("t-api-core", "Core API", "Build", anchor, 5, 8, 7, 17, 0.75, 32, "#00a67e", new SchedulerTaskLinkDto { Id = "t-architecture", LinkType = LinkType.FinishToStart }),
+            CreateTask("t-api-security", "Security API", "Build", anchor, 5, 8, 6, 17, 0.55, 24, "#0f9d58", new SchedulerTaskLinkDto { Id = "t-architecture", LinkType = LinkType.FinishToStart }),
+            CreateTask("t-ui-shell", "UI Shell", "Build", anchor, 5, 9, 7, 17, 0.7, 30, "#ff9800", new SchedulerTaskLinkDto { Id = "t-architecture", LinkType = LinkType.FinishToStart }),
+            CreateTask("t-ui-workflows", "Workflow UI", "Build", anchor, 7, 8, 9, 17, 0.35, 40, "#fb8c00", new SchedulerTaskLinkDto { Id = "t-ui-shell", LinkType = LinkType.FinishToStart }, new SchedulerTaskLinkDto { Id = "t-api-core", LinkType = LinkType.StartToStart }),
+            CreateTask("t-integration", "Integration", "Validate", anchor, 10, 8, 10, 17, 0.15, 16, "#ef5350", new SchedulerTaskLinkDto { Id = "t-api-core", LinkType = LinkType.FinishToStart }, new SchedulerTaskLinkDto { Id = "t-ui-workflows", LinkType = LinkType.FinishToStart }),
+            CreateTask("t-uat", "UAT", "Validate", anchor, 11, 9, 12, 15, 0.0, 18, "#d81b60", new SchedulerTaskLinkDto { Id = "t-integration", LinkType = LinkType.FinishToStart }),
+            CreateTask("t-release", "Release", "Release", anchor, 13, 10, 13, 14, 0.0, 4, "#6a1b9a", new SchedulerTaskLinkDto { Id = "t-uat", LinkType = LinkType.FinishToStart })
         ];
 
         project.Assignments =
@@ -78,21 +80,30 @@ public sealed class InMemorySchedulerProjectStore : ISchedulerProjectStore
         return project;
     }
 
-    private static SchedulerTaskItemDto CreateTask(string id, string name, string phase, int sy, int sm, int sd, int sh, int ey, int em, int ed, int eh, double progress, double effortHours, string color, params SchedulerTaskLinkDto[] links)
+    private static SchedulerTaskItemDto CreateTask(string id, string name, string phase, DateTimeOffset anchor, int startDayOffset, int startHour, int endDayOffset, int endHour, double progress, double effortHours, string color, params SchedulerTaskLinkDto[] links)
     {
         return new SchedulerTaskItemDto
         {
             Id = id,
             Name = name,
             Phase = phase,
-            StartDate = new DateTimeOffset(sy, sm, sd, sh, 0, 0, TimeSpan.Zero),
-            EndDate = new DateTimeOffset(ey, em, ed, eh, 0, 0, TimeSpan.Zero),
+            StartDate = At(anchor, startDayOffset, startHour),
+            EndDate = At(anchor, endDayOffset, endHour),
             Progress = progress,
             EffortHours = effortHours,
             Color = color,
             Links = links.ToList()
         };
     }
+
+    private static DateTimeOffset AnchorDay()
+    {
+        var now = DateTimeOffset.Now;
+        return new DateTimeOffset(now.Year, now.Month, now.Day, 0, 0, 0, now.Offset);
+    }
+
+    private static DateTimeOffset At(DateTimeOffset anchor, int dayOffset, int hour) =>
+        anchor.AddDays(dayOffset).AddHours(hour);
 
     private static SchedulerProjectDto Clone(SchedulerProjectDto project)
     {

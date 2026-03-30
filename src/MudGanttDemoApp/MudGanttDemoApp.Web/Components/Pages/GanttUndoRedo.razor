@@ -8,43 +8,179 @@
         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
             <div>
                 <MudText Typo="Typo.h4">Undo / redo task edits</MudText>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Editable chart with task move/progress history. Drag tasks or change progress, then undo or redo.</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Editable synchronized task list + timeline with history tracking. Drag tasks, update progress, then step backward or forward through changes.</MudText>
             </div>
-            <MudStack Row="true" Spacing="1">
+            <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ZoomOut" OnClick="ZoomOut">Zoom out</MudButton>
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.FitScreen" OnClick="ResetZoom">Reset view</MudButton>
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ZoomIn" OnClick="ZoomIn">Zoom in</MudButton>
                 <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Undo" OnClick="Undo" Disabled="@(_undoStack.Count == 0)">Undo</MudButton>
                 <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Redo" OnClick="Redo" Disabled="@(_redoStack.Count == 0)">Redo</MudButton>
             </MudStack>
         </MudStack>
 
-        <MudPaper Class="pa-4" Elevation="1" Style="height:420px;">
-            <MudGanttChart Tasks="_tasks"
-                           Events="_events"
-                           Color="Color.Primary"
-                           Variant="Variant.Outlined"
-                           TaskDatesChanged="OnTaskDatesChanged"
-                           TaskProgressChanged="OnTaskProgressChanged" />
-        </MudPaper>
+        <MudGrid Spacing="3">
+            <MudItem xs="12" lg="8">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-3 d-block">
+                        Selected: @( _selectedTask?.Name ?? "Nothing selected") · Undo steps: @_undoStack.Count · Redo steps: @_redoStack.Count
+                    </MudText>
+
+                    <MudGanttSynchronizedView @ref="_synchronizedView"
+                                              Tasks="_tasks"
+                                              TasksChanged="OnTasksChanged"
+                                              TaskListTasks="_tasks"
+                                              Events="_events"
+                                              SelectedTask="_selectedTask"
+                                              SelectedTaskChanged="OnSelectedTaskChanged"
+                                              Color="Color.Primary"
+                                              Variant="Variant.Outlined"
+                                              Dense="true"
+                                              Size="Size.Small"
+                                              TaskListWidth="42%"
+                                              Style="height:520px;"
+                                              TaskClicked="OnTaskClicked"
+                                              TaskDatesChanged="OnTaskDatesChanged"
+                                              TaskProgressChanged="OnTaskProgressChanged">
+
+                        <TaskListHeader>
+                            <MudGrid Spacing="1">
+                                <MudItem xs="1">
+                                    <MudText Typo="Typo.caption" Align="Align.Center"><strong>#</strong></MudText>
+                                </MudItem>
+                                <MudItem xs="5">
+                                    <MudText Typo="Typo.caption"><strong>Task</strong></MudText>
+                                </MudItem>
+                                <MudItem xs="3">
+                                    <MudText Typo="Typo.caption"><strong>Window</strong></MudText>
+                                </MudItem>
+                                <MudItem xs="3">
+                                    <MudText Typo="Typo.caption" Align="Align.Center"><strong>Progress</strong></MudText>
+                                </MudItem>
+                            </MudGrid>
+                        </TaskListHeader>
+
+                        <TaskListRowTemplate Context="row">
+                            <MudGrid Spacing="1">
+                                <MudItem xs="1">
+                                    <MudText Typo="Typo.body2" Align="Align.Center" Class="font-weight-medium">@(row.Index + 1)</MudText>
+                                </MudItem>
+                                <MudItem xs="5">
+                                    <MudStack Spacing="0">
+                                        <MudText Typo="Typo.body2">@row.Task.Name</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@($"{row.Task.Links.Length} link(s)")</MudText>
+                                    </MudStack>
+                                </MudItem>
+                                <MudItem xs="3">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@FormatTaskWindow(row.Task)</MudText>
+                                </MudItem>
+                                <MudItem xs="3">
+                                    <MudStack Spacing="0" AlignItems="AlignItems.Center">
+                                        <MudProgressLinear Color="@HomePageSupport.GetProgressColor(row.Task)"
+                                                           Value="@((row.Task.Progress ?? 0) * 100)"
+                                                           Size="Size.Small"
+                                                           Style="width: 100%;" />
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@((row.Task.Progress ?? 0).ToString("P0"))</MudText>
+                                    </MudStack>
+                                </MudItem>
+                            </MudGrid>
+                        </TaskListRowTemplate>
+
+                        <EmptyTaskListContent>
+                            <MudPaper Elevation="0" Class="pa-8 text-center">
+                                <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Large" Color="Color.Secondary" />
+                                <MudText Typo="Typo.h6" Color="Color.Secondary">No tasks to edit</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Reload the page to restore the demo backlog.</MudText>
+                            </MudPaper>
+                        </EmptyTaskListContent>
+                    </MudGanttSynchronizedView>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" lg="4">
+                <MudStack Spacing="3">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.h6" Class="mb-2">Selected task</MudText>
+
+                        @if (_selectedTask is null)
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Select a task from the list or chart to inspect its current editable state.</MudText>
+                        }
+                        else
+                        {
+                            <MudStack Spacing="1">
+                                <MudText Typo="Typo.subtitle1">@_selectedTask.Name</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Start: @_selectedTask.StartDate?.ToLocalTime().ToString("ddd dd MMM HH:mm")</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Finish: @_selectedTask.EndDate?.ToLocalTime().ToString("ddd dd MMM HH:mm")</MudText>
+                                <MudProgressLinear Color="@HomePageSupport.GetProgressColor(_selectedTask)"
+                                                   Value="@(((_selectedTask.Progress ?? 0) * 100))"
+                                                   Class="mt-2" />
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@(( _selectedTask.Progress ?? 0).ToString("P0")) complete · @_selectedTask.Links.Length dependency link(s)</MudText>
+                            </MudStack>
+                        }
+                    </MudPaper>
+
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.h6" Class="mb-2">History guidance</MudText>
+                        <MudText Typo="Typo.body2">Undo stack: <strong>@_undoStack.Count</strong></MudText>
+                        <MudText Typo="Typo.body2">Redo stack: <strong>@_redoStack.Count</strong></MudText>
+                        <MudDivider Class="my-2" />
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Drag a bar to move it, resize dates, or update progress directly on the chart. Each committed edit is snapshotted so undo restores the prior task state.</MudText>
+                    </MudPaper>
+                </MudStack>
+            </MudItem>
+        </MudGrid>
     </MudStack>
 </MudContainer>
 
 @code {
-    private IReadOnlyList<MudGanttTask> _tasks = GanttExampleData.CreateProjectTasks().Select(Clone).ToList();
+    private MudGanttSynchronizedView _synchronizedView = default!;
+    private IReadOnlyList<MudGanttTask> _tasks = CloneTasks(GanttExampleData.CreateProjectTasks());
+    private IReadOnlyList<MudGanttTask> _committedTasks = [];
     private readonly IReadOnlyList<MudGanttEvent> _events = GanttExampleData.CreateProjectEvents();
     private readonly Stack<IReadOnlyList<MudGanttTask>> _undoStack = [];
     private readonly Stack<IReadOnlyList<MudGanttTask>> _redoStack = [];
+    private MudGanttTask? _selectedTask;
+
+    protected override void OnInitialized()
+    {
+        _committedTasks = CloneTasks(_tasks);
+        SyncSelectedTask(selectFirstIfMissing: true);
+    }
+
+    private Task ZoomIn() => _synchronizedView.ZoomInAsync();
+    private Task ZoomOut() => _synchronizedView.ZoomOutAsync();
+    private Task ResetZoom() => _synchronizedView.ResetZoomAsync();
+
+    private Task OnTasksChanged(IReadOnlyList<MudGanttTask> tasks)
+    {
+        _tasks = CloneTasks(tasks);
+        SyncSelectedTask(selectFirstIfMissing: false);
+        return Task.CompletedTask;
+    }
+
+    private Task OnSelectedTaskChanged(MudGanttTask? task)
+    {
+        SyncSelectedTask(task?.Id, selectFirstIfMissing: false);
+        return Task.CompletedTask;
+    }
+
+    private Task OnTaskClicked(MudGanttTask task)
+    {
+        SyncSelectedTask(task.Id, selectFirstIfMissing: false);
+        return Task.CompletedTask;
+    }
 
     private Task OnTaskDatesChanged(MudGanttTask task)
     {
-        PushUndo();
-        ApplyTask(task);
+        CommitChange(task.Id);
         Snackbar.Add($"Moved {task.Name}", Severity.Info);
         return Task.CompletedTask;
     }
 
     private Task OnTaskProgressChanged(MudGanttTask task)
     {
-        PushUndo();
-        ApplyTask(task);
+        CommitChange(task.Id);
         Snackbar.Add($"Updated {task.Name}", Severity.Info);
         return Task.CompletedTask;
     }
@@ -53,27 +189,54 @@
     {
         if (_undoStack.Count == 0)
             return;
-        _redoStack.Push(_tasks.Select(Clone).ToList());
-        _tasks = _undoStack.Pop().Select(Clone).ToList();
+
+        _redoStack.Push(CloneTasks(_committedTasks));
+        RestoreState(_undoStack.Pop());
+        Snackbar.Add("Undo applied", Severity.Info);
     }
 
     private void Redo()
     {
         if (_redoStack.Count == 0)
             return;
-        _undoStack.Push(_tasks.Select(Clone).ToList());
-        _tasks = _redoStack.Pop().Select(Clone).ToList();
+
+        _undoStack.Push(CloneTasks(_committedTasks));
+        RestoreState(_redoStack.Pop());
+        Snackbar.Add("Redo applied", Severity.Info);
     }
 
-    private void PushUndo()
+    private void CommitChange(string taskId)
     {
-        _undoStack.Push(_tasks.Select(Clone).ToList());
+        _undoStack.Push(CloneTasks(_committedTasks));
         _redoStack.Clear();
+        RestoreState(_tasks, taskId, selectFirstIfMissing: false);
     }
 
-    private void ApplyTask(MudGanttTask updated)
+    private void RestoreState(IReadOnlyList<MudGanttTask> snapshot, string? selectedTaskId = null, bool selectFirstIfMissing = true)
     {
-        _tasks = _tasks.Select(task => task.Id == updated.Id ? Clone(updated) : Clone(task)).ToList();
+        _tasks = CloneTasks(snapshot);
+        _committedTasks = CloneTasks(_tasks);
+        SyncSelectedTask(selectedTaskId, selectFirstIfMissing);
+    }
+
+    private void SyncSelectedTask(string? taskId = null, bool selectFirstIfMissing = true)
+    {
+        taskId ??= _selectedTask?.Id;
+        _selectedTask = taskId is null ? null : _tasks.FirstOrDefault(task => task.Id == taskId);
+
+        if (_selectedTask is null && selectFirstIfMissing)
+        {
+            _selectedTask = _tasks.FirstOrDefault();
+        }
+    }
+
+    private static IReadOnlyList<MudGanttTask> CloneTasks(IEnumerable<MudGanttTask> tasks) => tasks.Select(Clone).ToList();
+
+    private static string FormatTaskWindow(MudGanttTask task)
+    {
+        var start = task.StartDate?.ToLocalTime().ToString("dd MMM") ?? "-";
+        var end = task.EndDate?.ToLocalTime().ToString("dd MMM") ?? "-";
+        return $"{start} → {end}";
     }
 
     private static MudGanttTask Clone(MudGanttTask source) => new()

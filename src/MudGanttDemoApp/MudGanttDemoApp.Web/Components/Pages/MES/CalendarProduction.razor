@@ -45,7 +45,7 @@
     private readonly IReadOnlyList<CalendarExampleItem> _items = Enumerable.Range(0, 24)
         .Select(i => new CalendarExampleItem
         {
-            Start = new DateTime(2025, 11, 1).AddDays(i % 14).AddHours(6 + (i % 10)),
+            Start = DateTime.Today.AddDays(i % 14).AddHours(6 + (i % 10)),
             Text = $"Job {2500 + i} · Client {(char)('A' + (i % 6))} · CNC {(i % 5) + 1}"
         })
         .ToList();

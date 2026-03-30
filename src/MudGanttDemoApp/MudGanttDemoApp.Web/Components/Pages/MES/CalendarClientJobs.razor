@@ -47,12 +47,15 @@
 @code {
     private readonly IReadOnlyList<CalendarExampleItem> _items =
     [
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 3, 8, 0, 0), Text = "Job 2501 · Client A", Client = "Client A", JobId = "2501", Machine = "CNC-01", Category = "Machining" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 4, 10, 0, 0), Text = "Job 2502 · Client A", Client = "Client A", JobId = "2502", Machine = "Laser-01", Category = "Cutting" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 5, 11, 0, 0), Text = "Job 2512 · Client B", Client = "Client B", JobId = "2512", Machine = "CNC-02", Category = "Machining" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 6, 14, 0, 0), Text = "Job 2513 · Client B", Client = "Client B", JobId = "2513", Machine = "Paint Booth", Category = "Finishing" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 7, 9, 0, 0), Text = "Job 2521 · Client C", Client = "Client C", JobId = "2521", Machine = "Laser-01", Category = "Prototype" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 10, 8, 30, 0), Text = "Job 2527 · Client D", Client = "Client D", JobId = "2527", Machine = "CNC-01", Category = "Production" },
-        new CalendarExampleItem { Start = new DateTime(2025, 11, 11), Text = "Public holiday", AllDay = true, Category = "Non-working" }
+        new CalendarExampleItem { Start = ClientJobDate(0, 8), Text = "Job 2501 · Client A", Client = "Client A", JobId = "2501", Machine = "CNC-01", Category = "Machining" },
+        new CalendarExampleItem { Start = ClientJobDate(1, 10), Text = "Job 2502 · Client A", Client = "Client A", JobId = "2502", Machine = "Laser-01", Category = "Cutting" },
+        new CalendarExampleItem { Start = ClientJobDate(2, 11), Text = "Job 2512 · Client B", Client = "Client B", JobId = "2512", Machine = "CNC-02", Category = "Machining" },
+        new CalendarExampleItem { Start = ClientJobDate(3, 14), Text = "Job 2513 · Client B", Client = "Client B", JobId = "2513", Machine = "Paint Booth", Category = "Finishing" },
+        new CalendarExampleItem { Start = ClientJobDate(4, 9), Text = "Job 2521 · Client C", Client = "Client C", JobId = "2521", Machine = "Laser-01", Category = "Prototype" },
+        new CalendarExampleItem { Start = ClientJobDate(7, 8, 30), Text = "Job 2527 · Client D", Client = "Client D", JobId = "2527", Machine = "CNC-01", Category = "Production" },
+        new CalendarExampleItem { Start = ClientJobDate(8), Text = "Public holiday", AllDay = true, Category = "Non-working" }
     ];
+
+    private static DateTime ClientJobDate(int dayOffset, int hour = 0, int minute = 0) =>
+        DateTime.Today.AddDays(dayOffset).AddHours(hour).AddMinutes(minute);
 }
