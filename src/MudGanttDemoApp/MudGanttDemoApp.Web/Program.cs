@@ -162,6 +162,6 @@ feedbackApi.MapGet("/export", async (IBugFeedbackStore store, CancellationToken 
     return Results.File(content, "application/json", "bug-feedback.json");
 });
 
-app.MapDefaultEndpoints();
+//app.MapDefaultEndpoints();
 
 app.Run();
