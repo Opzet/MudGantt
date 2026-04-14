@@ -1,0 +1,254 @@
+@page "/dashboard"
+
+<PageTitle>Portfolio Dashboard — MudGantt</PageTitle>
+
+<div class="pm-dashboard">
+
+    <!-- ══ HEADER ══════════════════════════════════════════════════════════ -->
+    <div class="pm-dash-header">
+        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Dashboard" Style="color:#4caf50;" />
+            <MudText Typo="Typo.h6" Style="color:#e0e0e0;">Portfolio Dashboard</MudText>
+            <MudSpacer />
+            <MudText Typo="Typo.caption" Style="color:#888;">@_projects.Count projects &bull; @TotalTasks tasks</MudText>
+        </MudStack>
+    </div>
+
+    <!-- ══ 3×2 DASHBOARD GRID ═══════════════════════════════════════════ -->
+    <div class="pm-dash-grid">
+
+        <!-- ┌─ HEALTH ─────────────────────────────────────────────────────┐ -->
+        <div class="pm-dash-card">
+            <div class="pm-dash-card-header">
+                <span class="pm-dash-card-title">Health</span>
+                <MudIconButton Icon="@Icons.Material.Outlined.OpenInFull" Size="Size.Small" Style="color:#666;" />
+            </div>
+            <div class="pm-dash-card-body">
+                <table class="pm-health-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;">PROJECT</th>
+                            <th>TIME</th>
+                            <th>COST</th>
+                            <th>WORKLOAD</th>
+                            <th>TASKS</th>
+                            <th>PROGRESS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in _projects)
+                        {
+                            <tr>
+                                <td>@p.ShortName</td>
+                                <td style="text-align:center;"><span class="pm-health-dot @DotClass(p.TimeHealth)"></span></td>
+                                <td style="text-align:center;"><span class="pm-health-dot @DotClass(p.CostHealth)"></span></td>
+                                <td style="text-align:center;"><span class="pm-health-dot @DotClass(p.WorkloadHealth)"></span></td>
+                                <td style="text-align:center;">@p.TaskCount</td>
+                                <td style="text-align:right; padding-right:12px;">@($"{p.Progress * 100:N0}%")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ┌─ TASKS DONUT ────────────────────────────────────────────────┐ -->
+        <div class="pm-dash-card">
+            <div class="pm-dash-card-header">
+                <span class="pm-dash-card-title">Tasks</span>
+                <MudIconButton Icon="@Icons.Material.Outlined.OpenInFull" Size="Size.Small" Style="color:#666;" />
+            </div>
+            <div class="pm-dash-card-body pm-donut-wrap">
+                <div style="position:relative; display:inline-block;">
+                    <svg width="200" height="200" viewBox="0 0 200 200">
+                        <!-- track -->
+                        <circle cx="100" cy="100" r="@DonutRadius" fill="none"
+                                stroke="#2a2a3e" stroke-width="26" />
+                        <!-- Not Started (gray) -->
+                        <circle cx="100" cy="100" r="@DonutRadius" fill="none"
+                                stroke="#9e9e9e" stroke-width="26"
+                                stroke-dasharray="@NotStartedArc @(DonutCirc - NotStartedArc)"
+                                stroke-dashoffset="@NotStartedOffset"
+                                transform="rotate(-90 100 100)" />
+                        <!-- Complete (green) -->
+                        <circle cx="100" cy="100" r="@DonutRadius" fill="none"
+                                stroke="#4caf50" stroke-width="26"
+                                stroke-dasharray="@CompleteArc @(DonutCirc - CompleteArc)"
+                                stroke-dashoffset="@CompleteOffset"
+                                transform="rotate(-90 100 100)" />
+                        <!-- In Progress (teal) -->
+                        <circle cx="100" cy="100" r="@DonutRadius" fill="none"
+                                stroke="#00bcd4" stroke-width="26"
+                                stroke-dasharray="@InProgressArc @(DonutCirc - InProgressArc)"
+                                stroke-dashoffset="@InProgressOffset"
+                                transform="rotate(-90 100 100)" />
+                        <!-- center labels -->
+                        <text x="100" y="92" text-anchor="middle" font-size="13"
+                              fill="#888" font-family="sans-serif">In Progress</text>
+                        <text x="100" y="116" text-anchor="middle" font-size="32"
+                              font-weight="700" fill="#e0e0e0" font-family="sans-serif">@TotalInProgress</text>
+                        <!-- side counts -->
+                        <text x="10" y="106" text-anchor="start" font-size="20"
+                              font-weight="600" fill="#4caf50" font-family="sans-serif">@TotalComplete</text>
+                        <text x="190" y="106" text-anchor="end" font-size="20"
+                              font-weight="600" fill="#9e9e9e" font-family="sans-serif">@TotalNotStarted</text>
+                    </svg>
+                </div>
+                <div class="pm-donut-legend" style="margin-left:16px;">
+                    <div class="pm-donut-legend-item">
+                        <span class="pm-donut-dot" style="background:#9e9e9e;"></span>
+                        <span>Not Started (@TotalNotStarted)</span>
+                    </div>
+                    <div class="pm-donut-legend-item">
+                        <span class="pm-donut-dot" style="background:#4caf50;"></span>
+                        <span>Complete (@TotalComplete)</span>
+                    </div>
+                    <div class="pm-donut-legend-item">
+                        <span class="pm-donut-dot" style="background:#00bcd4;"></span>
+                        <span>In Progress (@TotalInProgress)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ┌─ PROGRESS ───────────────────────────────────────────────────┐ -->
+        <div class="pm-dash-card">
+            <div class="pm-dash-card-header">
+                <span class="pm-dash-card-title">Progress</span>
+                <div style="display:flex; align-items:center; gap:6px; font-size:11px; color:#888;">
+                    <span style="display:flex; align-items:center; gap:3px;">
+                        <span style="width:10px;height:10px;border-radius:2px;background:#4caf50;display:inline-block;"></span>Planned
+                    </span>
+                    <span style="display:flex; align-items:center; gap:3px;">
+                        <span style="width:10px;height:10px;border-radius:2px;background:#9c27b0;display:inline-block;"></span>Actual
+                    </span>
+                </div>
+            </div>
+            <div class="pm-dash-card-body">
+                @foreach (var p in _projects)
+                {
+                    <div class="pm-proj-progress-row">
+                        <span class="pm-proj-name">@p.ShortName</span>
+                        <div class="pm-proj-bar-wrap">
+                            <div class="pm-proj-bar-row">
+                                <span class="pm-proj-pct" style="color:#4caf50;">@($"{p.PlannedProgress*100:N0}%")</span>
+                                <div class="pm-proj-bar-bg">
+                                    <div class="pm-proj-bar-fill" style="width:@($"{p.PlannedProgress*100:F1}%"); background:#4caf50;"></div>
+                                </div>
+                            </div>
+                            <div class="pm-proj-bar-row">
+                                <span class="pm-proj-pct" style="color:#9c27b0;">@($"{p.ActualProgress*100:N0}%")</span>
+                                <div class="pm-proj-bar-bg">
+                                    <div class="pm-proj-bar-fill" style="width:@($"{p.ActualProgress*100:F1}%"); background:#9c27b0;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- ┌─ TIME ───────────────────────────────────────────────────────┐ -->
+        <div class="pm-dash-card">
+            <div class="pm-dash-card-header">
+                <span class="pm-dash-card-title">Time</span>
+                <div style="display:flex; align-items:center; gap:8px; font-size:11px; color:#888;">
+                    <span><span class="pm-donut-dot" style="background:#2196f3;display:inline-block;margin-right:3px;"></span>Ahead</span>
+                    <span><span class="pm-donut-dot" style="background:#ff9800;display:inline-block;margin-right:3px;"></span>Behind</span>
+                    <span><span class="pm-donut-dot" style="background:#4caf50;display:inline-block;margin-right:3px;"></span>On Time</span>
+                </div>
+            </div>
+            <div class="pm-dash-card-body">
+                @foreach (var p in _projects)
+                {
+                    <div class="pm-time-row">
+                        <span class="pm-proj-name">@p.ShortName</span>
+                        <div class="pm-time-bar">
+                            @if (p.AheadPct > 0)
+                            {
+                                <div class="pm-time-ahead" style="width:@($"{p.AheadPct:F1}%"); min-width:2px; display:flex; align-items:center; justify-content:center; font-size:10px; color:#fff; font-weight:600;">
+                                    @if (p.AheadPct > 8) { <span>@($"{p.AheadPct:N0}%")</span> }
+                                </div>
+                            }
+                            @if (p.BehindPct > 0)
+                            {
+                                <div class="pm-time-behind" style="width:@($"{p.BehindPct:F1}%"); min-width:2px;"></div>
+                            }
+                            @if (p.OnTimePct > 0)
+                            {
+                                <div class="pm-time-ontime" style="width:@($"{p.OnTimePct:F1}%"); min-width:2px;"></div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- ┌─ COST ───────────────────────────────────────────────────────┐ -->
+        <div class="pm-dash-card">
+            <div class="pm-dash-card-header">
+                <span class="pm-dash-card-title">Cost</span>
+                <div style="display:flex; align-items:center; gap:8px; font-size:11px; color:#888;">
+                    <span><span class="pm-donut-dot" style="background:#00bcd4;display:inline-block;margin-right:3px;"></span>Actual</span>
+                    <span><span class="pm-donut-dot" style="background:#2196f3;display:inline-block;margin-right:3px;"></span>Planned</span>
+                    <span><span class="pm-donut-dot" style="background:#f44336;display:inline-block;margin-right:3px;"></span>Budget</span>
+                </div>
+            </div>
+            <div class="pm-dash-card-body" style="padding: 8px 12px; overflow: auto;">
+                @{
+                    var maxB = MaxBudget;
+                }
+                @foreach (var p in _projects)
+                {
+                    <div class="pm-cost-row">
+                        <span class="pm-proj-name">@p.ShortName</span>
+                        <div class="pm-cost-bars">
+                            <div class="pm-cost-bar" style="width:@($"{CostBarWidth(p.ActualCost, maxB):F0}px"); background:#00bcd4;" title="Actual: $@($"{p.ActualCost:N0}k")"></div>
+                            <div class="pm-cost-bar" style="width:@($"{CostBarWidth(p.PlannedCost, maxB):F0}px"); background:#2196f3;" title="Planned: $@($"{p.PlannedCost:N0}k")"></div>
+                            <div class="pm-cost-bar" style="width:@($"{CostBarWidth(p.BudgetCost, maxB):F0}px"); background:#f44336;" title="Budget: $@($"{p.BudgetCost:N0}k")"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- ┌─ WORKLOAD ───────────────────────────────────────────────────┐ -->
+        <div class="pm-dash-card">
+            <div class="pm-dash-card-header">
+                <span class="pm-dash-card-title">Workload</span>
+                <div style="display:flex; align-items:center; gap:8px; font-size:11px; color:#888;">
+                    <span><span class="pm-donut-dot" style="background:#4caf50;display:inline-block;margin-right:3px;"></span>Completed</span>
+                    <span><span class="pm-donut-dot" style="background:#00bcd4;display:inline-block;margin-right:3px;"></span>Remaining</span>
+                    <span><span class="pm-donut-dot" style="background:#f44336;display:inline-block;margin-right:3px;"></span>Overdue</span>
+                </div>
+            </div>
+            <div class="pm-dash-card-body">
+                @foreach (var p in _projects)
+                {
+                    var total = p.CompletedWL + p.RemainingWL + p.OverdueWL;
+                    <div class="pm-workload-row">
+                        <span class="pm-proj-name">@p.ShortName</span>
+                        <div class="pm-workload-bar">
+                            @if (p.CompletedWL > 0)
+                            {
+                                <div class="pm-workload-completed"
+                                     style="width:@($"{(p.CompletedWL / total) * 100:F1}%")"></div>
+                            }
+                            @if (p.RemainingWL > 0)
+                            {
+                                <div class="pm-workload-remaining"
+                                     style="width:@($"{(p.RemainingWL / total) * 100:F1}%")"></div>
+                            }
+                            @if (p.OverdueWL > 0)
+                            {
+                                <div class="pm-workload-overdue"
+                                     style="width:@($"{(p.OverdueWL / total) * 100:F1}%")"></div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+    </div>
+</div>

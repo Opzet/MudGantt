@@ -134,5 +134,32 @@
         /// Optional label rendered to the right of the task bar.
         /// </summary>
         public string? RightLabel { get; set; }
+
+        /// <summary>WBS hierarchy number (e.g., "1", "1.1", "1.2").</summary>
+        public string? WbsNumber { get; set; }
+
+        /// <summary>Task workflow status. Common values: "Not Started", "In Progress", "On Hold", "Complete", "At Risk".</summary>
+        public string? Status { get; set; }
+
+        /// <summary>Assignee display name shown in the task list.</summary>
+        public string? AssigneeName { get; set; }
+
+        /// <summary>Assignee initials for avatar rendering (e.g., "JD").</summary>
+        public string? AssigneeInitials { get; set; }
+
+        /// <summary>Background colour for the assignee avatar (CSS colour string).</summary>
+        public string? AssigneeAvatarColor { get; set; }
+
+        /// <summary>Parent task id for hierarchy; null indicates a top-level task.</summary>
+        public string? ParentId { get; set; }
+
+        /// <summary>If true, this row is a phase/group header that may contain child tasks.</summary>
+        public bool IsPhase { get; set; }
+
+        /// <summary>If true and IsPhase is true, the phase's child rows are hidden in the task list.</summary>
+        public bool IsCollapsed { get; set; }
+
+        /// <summary>Visual indent depth for hierarchy display (0 = root level).</summary>
+        public int IndentLevel { get; set; }
     }
 }

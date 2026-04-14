@@ -1,0 +1,264 @@
+@page "/raid-log"
+
+<PageTitle>RAID Log — MudGantt</PageTitle>
+
+<div class="pm-project-page">
+
+    <!-- ══════════════════════════ HEADER ══════════════════════════════════ -->
+    <div class="pm-project-header">
+        <div class="pm-header-left">
+            <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Class="pm-header-icon" Style="color:#ff9800;" />
+            <div>
+                <MudText Typo="Typo.h6" Class="pm-project-title">RAID Log</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    Risks · Assumptions · Issues · Decisions
+                </MudText>
+            </div>
+        </div>
+        <div class="pm-header-right">
+            <MudChip T="string" Color="Color.Error" Size="Size.Small">@OpenCount Open</MudChip>
+            <MudChip T="string" Color="Color.Warning" Size="Size.Small">@InReviewCount In Review</MudChip>
+            <MudChip T="string" Color="Color.Success" Size="Size.Small">@ClosedCount Closed</MudChip>
+            <MudButton StartIcon="@Icons.Material.Filled.Add"
+                       Variant="Variant.Filled" Color="Color.Primary"
+                       Size="Size.Small" OnClick="AddRisk">Add Item</MudButton>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════ FILTER TOOLBAR ═════════════════════════ -->
+    <div class="pm-gantt-toolbar pm-raid-filters">
+        <MudText Typo="Typo.caption" Class="mr-2" Style="align-self:center;">Type:</MudText>
+        <MudChip T="string"
+                 Color="@(_typeFilter == null ? Color.Primary : Color.Default)"
+                 Variant="@(_typeFilter == null ? Variant.Filled : Variant.Outlined)"
+                 Size="Size.Small"
+                 OnClick="@(() => _typeFilter = null)">All</MudChip>
+        @foreach (var type in Enum.GetValues<RaidItemType>())
+        {
+            var t = type;
+            <MudChip T="string"
+                     Color="@(_typeFilter == t ? Color.Primary : Color.Default)"
+                     Variant="@(_typeFilter == t ? Variant.Filled : Variant.Outlined)"
+                     Size="Size.Small"
+                     OnClick="@(() => _typeFilter = t)">@t</MudChip>
+        }
+        <div class="pm-toolbar-sep"></div>
+        <MudText Typo="Typo.caption" Class="mr-2" Style="align-self:center;">Status:</MudText>
+        <MudChip T="string"
+                 Color="@(_statusFilter == null ? Color.Primary : Color.Default)"
+                 Variant="@(_statusFilter == null ? Variant.Filled : Variant.Outlined)"
+                 Size="Size.Small"
+                 OnClick="@(() => _statusFilter = null)">All</MudChip>
+        @foreach (var status in Enum.GetValues<RiskStatus>())
+        {
+            var s = status;
+            <MudChip T="string"
+                     Color="@(_statusFilter == s ? Color.Primary : Color.Default)"
+                     Variant="@(_statusFilter == s ? Variant.Filled : Variant.Outlined)"
+                     Size="Size.Small"
+                     OnClick="@(() => _statusFilter = s)">@s</MudChip>
+        }
+    </div>
+
+    <!-- ══════════════════════════ TABLE ══════════════════════════════════ -->
+    <div class="pm-project-body pm-raid-body">
+        <div class="pm-raid-scroll">
+            <table class="pm-raid-table">
+                <thead>
+                    <tr>
+                        <th style="width:38px">Type</th>
+                        <th>
+                            <span class="pm-sort-header" @onclick="@(() => Sort("name"))">
+                                Name <MudIcon Icon="@SortIcon("name")" Style="font-size:14px;" />
+                            </span>
+                        </th>
+                        <th style="width:80px">
+                            <span class="pm-sort-header" @onclick="@(() => Sort("priority"))">
+                                Priority <MudIcon Icon="@SortIcon("priority")" Style="font-size:14px;" />
+                            </span>
+                        </th>
+                        <th style="width:90px">Status</th>
+                        <th style="width:70px">
+                            <span class="pm-sort-header" @onclick="@(() => Sort("impact"))">
+                                Impact <MudIcon Icon="@SortIcon("impact")" Style="font-size:14px;" />
+                            </span>
+                        </th>
+                        <th style="width:84px">
+                            <span class="pm-sort-header" @onclick="@(() => Sort("likelihood"))">
+                                Likelihood <MudIcon Icon="@SortIcon("likelihood")" Style="font-size:14px;" />
+                            </span>
+                        </th>
+                        <th style="width:52px">
+                            <span class="pm-sort-header" @onclick="@(() => Sort("score"))">
+                                Score <MudIcon Icon="@SortIcon("score")" Style="font-size:14px;" />
+                            </span>
+                        </th>
+                        <th style="width:80px">Response</th>
+                        <th style="width:84px">
+                            <span class="pm-sort-header" @onclick="@(() => Sort("due"))">
+                                Due Date <MudIcon Icon="@SortIcon("due")" Style="font-size:14px;" />
+                            </span>
+                        </th>
+                        <th style="width:50px">Owner</th>
+                        <th style="width:56px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var risk in FilteredRisks)
+                    {
+                        <tr class="@(risk == _selectedRisk ? "pm-row-selected" : "") pm-raid-row"
+                            @onclick="() => OpenCard(risk)">
+                            <td>
+                                <span class="pm-raid-type-badge @GetRaidTypeClass(risk.Type)" title="@risk.Type">
+                                    @GetRaidTypeInitial(risk.Type)
+                                </span>
+                            </td>
+                            <td>
+                                <div class="pm-risk-name">@risk.Name</div>
+                                @if (risk.Tags is { Length: > 0 })
+                                {
+                                    <div class="pm-risk-tags">
+                                        @foreach (var tag in risk.Tags)
+                                        {
+                                            <span class="pm-tag">@tag</span>
+                                        }
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                <span class="pm-priority-text @GetPriorityClass(risk.Priority)">@risk.Priority</span>
+                            </td>
+                            <td>
+                                <span class="pm-raid-status-pill pm-raid-status-@risk.Status.ToString().ToLower()">
+                                    @risk.Status
+                                </span>
+                            </td>
+                            <td><span class="pm-level-@risk.Impact.ToString().ToLower()">@risk.Impact</span></td>
+                            <td><span class="pm-level-@risk.Likelihood.ToString().ToLower()">@risk.Likelihood</span></td>
+                            <td>
+                                <span class="pm-risk-score-badge @GetScoreClass(risk.RiskScore)" title="@risk.RiskScoreLabel">
+                                    @risk.RiskScore
+                                </span>
+                            </td>
+                            <td class="pm-muted-text">@risk.Response</td>
+                            <td class="pm-date-text">@risk.DueDate?.ToString("MMM d")</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(risk.AssigneeInitials))
+                                {
+                                    <MudAvatar Style="@($"background:{risk.AssigneeAvatarColor};width:24px;height:24px;font-size:10px;")"
+                                               Title="@risk.AssigneeName">@risk.AssigneeInitials</MudAvatar>
+                                }
+                            </td>
+                            <td>
+                                <MudIconButton Icon="@Icons.Material.Filled.OpenInFull"
+                                               Size="Size.Small"
+                                               OnClick="@(() => OpenCard(risk))"
+                                               Title="Open" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════ RISK CARD DRAWER ══════════════════════════ -->
+<MudDrawer @bind-Open="_drawerOpen"
+           Anchor="Anchor.Right"
+           Variant="DrawerVariant.Temporary"
+           Width="420px"
+           Elevation="4">
+    <MudDrawerHeader>
+        <MudStack Row AlignItems="AlignItems.Center" Class="flex-grow-1">
+            <span class="pm-raid-type-badge @GetRaidTypeClass(_editRisk.Type)" style="margin-right:8px;">
+                @GetRaidTypeInitial(_editRisk.Type)
+            </span>
+            <MudText Typo="Typo.h6" Class="flex-grow-1">@_editRisk.Type Detail</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseCard" Size="Size.Small" />
+        </MudStack>
+    </MudDrawerHeader>
+
+    <MudDrawerContainer Class="pa-4">
+        <MudStack Spacing="3">
+
+            <MudTextField @bind-Value="_editRisk.Name" Label="Name" Variant="Variant.Outlined" Lines="2" />
+
+            <MudStack Row Spacing="2">
+                <MudSelect @bind-Value="_editRisk.Type" Label="Type" Variant="Variant.Outlined">
+                    @foreach (var t in Enum.GetValues<RaidItemType>())
+                    { <MudSelectItem Value="@t">@t</MudSelectItem> }
+                </MudSelect>
+                <MudSelect @bind-Value="_editRisk.Priority" Label="Priority" Variant="Variant.Outlined">
+                    @foreach (var p in Enum.GetValues<RiskPriority>())
+                    { <MudSelectItem Value="@p">@p</MudSelectItem> }
+                </MudSelect>
+            </MudStack>
+
+            <MudStack Row Spacing="2">
+                <MudSelect @bind-Value="_editRisk.Impact" Label="Impact" Variant="Variant.Outlined">
+                    @foreach (var l in Enum.GetValues<RiskLevel>())
+                    { <MudSelectItem Value="@l">@l</MudSelectItem> }
+                </MudSelect>
+                <MudSelect @bind-Value="_editRisk.Likelihood" Label="Likelihood" Variant="Variant.Outlined">
+                    @foreach (var l in Enum.GetValues<RiskLevel>())
+                    { <MudSelectItem Value="@l">@l</MudSelectItem> }
+                </MudSelect>
+            </MudStack>
+
+            <!-- 3×3 Risk Matrix -->
+            <div class="pm-risk-matrix-wrap">
+                <MudText Typo="Typo.caption" Class="pm-matrix-label">Risk Matrix — Impact × Likelihood</MudText>
+                <div class="pm-risk-matrix">
+                    <div class="pm-matrix-axis-y">Impact ↑</div>
+                    @foreach (var impact in Enum.GetValues<RiskLevel>().Reverse())
+                    {
+                        @foreach (var likelihood in Enum.GetValues<RiskLevel>())
+                        {
+                            <div class="pm-matrix-cell @GetMatrixCellClass(impact, likelihood, _editRisk)"
+                                 title="Impact: @impact / Likelihood: @likelihood">
+                                @if (_editRisk.Impact == impact && _editRisk.Likelihood == likelihood)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Circle" Style="font-size:10px;" />
+                                }
+                            </div>
+                        }
+                    }
+                    <div class="pm-matrix-spacer"></div>
+                    <div class="pm-matrix-axis-x" style="grid-column: span 3; text-align:center;">← Likelihood →</div>
+                </div>
+                <div class="pm-risk-score-summary mt-2">
+                    Score: <span class="pm-risk-score-badge @GetScoreClass(_editRisk.RiskScore)">
+                        @_editRisk.RiskScore — @_editRisk.RiskScoreLabel
+                    </span>
+                </div>
+            </div>
+
+            <MudStack Row Spacing="2">
+                <MudSelect @bind-Value="_editRisk.Response" Label="Response" Variant="Variant.Outlined">
+                    @foreach (var r in Enum.GetValues<RiskResponse>())
+                    { <MudSelectItem Value="@r">@r</MudSelectItem> }
+                </MudSelect>
+                <MudSelect @bind-Value="_editRisk.Status" Label="Status" Variant="Variant.Outlined">
+                    @foreach (var s in Enum.GetValues<RiskStatus>())
+                    { <MudSelectItem Value="@s">@s</MudSelectItem> }
+                </MudSelect>
+            </MudStack>
+
+            <MudTextField @bind-Value="_editRisk.Description" Label="Description"
+                          Variant="Variant.Outlined" Lines="3" />
+            <MudTextField @bind-Value="_editRisk.Resolution" Label="Resolution / Notes"
+                          Variant="Variant.Outlined" Lines="2" />
+            <MudTextField @bind-Value="_editRisk.AssigneeName" Label="Owner" Variant="Variant.Outlined" />
+
+            <MudStack Row Justify="Justify.SpaceBetween">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveRisk">Save</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="DeleteRisk">Delete</MudButton>
+            </MudStack>
+
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                Created: @_editRisk.CreatedDate.ToString("MMM d, yyyy")
+            </MudText>
+        </MudStack>
+    </MudDrawerContainer>
+</MudDrawer>

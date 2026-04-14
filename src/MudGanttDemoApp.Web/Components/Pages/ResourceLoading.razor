@@ -1,0 +1,154 @@
+@page "/resource-loading"
+
+<PageTitle>Resource Loading — MudGantt</PageTitle>
+
+<div class="pm-resource-page">
+
+    <!-- ══ TOOLBAR ═════════════════════════════════════════════════════════ -->
+    <div class="pm-resource-toolbar">
+        <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
+            <MudButton OnClick="PreviousPeriod">‹</MudButton>
+            <MudButton>@_period</MudButton>
+            <MudButton OnClick="NextPeriod">›</MudButton>
+        </MudButtonGroup>
+
+        <MudSelect @bind-Value="_projectFilter"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   Style="width:160px;">
+            <MudSelectItem Value="@("All Projects")">All Projects</MudSelectItem>
+            <MudSelectItem Value="@("5Gigs IT")">5Gigs IT</MudSelectItem>
+            <MudSelectItem Value="@("Park Talks")">Park Talks</MudSelectItem>
+            <MudSelectItem Value="@("Willow Manufacturing")">Willow Manufacturing</MudSelectItem>
+        </MudSelect>
+
+        <MudButton Variant="Variant.Outlined" Size="Size.Small"
+                   EndIcon="@Icons.Material.Filled.ArrowDropDown">Tags</MudButton>
+        <MudButton Variant="Variant.Outlined" Size="Size.Small"
+                   EndIcon="@Icons.Material.Filled.ArrowDropDown">Assignee</MudButton>
+
+        <MudSpacer />
+
+        <MudIconButton Icon="@Icons.Material.Filled.IosShare"
+                       Size="Size.Small" Title="Export" OnClick="ExportWorkload" />
+        <MudIconButton Icon="@Icons.Material.Filled.Settings"
+                       Size="Size.Small" Title="Settings" />
+    </div>
+
+    <!-- ══ CALENDAR GRID ═══════════════════════════════════════════════════ -->
+    <div class="pm-resource-body">
+        <div class="pm-resource-grid">
+            <table class="pm-resource-table">
+                <!-- Week headers -->
+                <thead>
+                    <tr>
+                        <th class="pm-res-name-col" style="border-bottom: 1px solid var(--mud-palette-lines-default);">NAME</th>
+                        @foreach (var week in WeekGroups)
+                        {
+                            var firstDay = week.First().Date;
+                            <th colspan="7" style="text-align:center; padding:4px 0; border-bottom:1px solid var(--mud-palette-lines-default); font-size:12px; font-weight:600; border-left:2px solid var(--mud-palette-lines-default);">
+                                @firstDay.ToString("d MMM")
+                            </th>
+                        }
+                    </tr>
+                    <tr>
+                        <th class="pm-res-name-col" style="font-size:11px; color:var(--mud-palette-text-secondary);">
+                            Show tasks
+                        </th>
+                        @foreach (var day in CalendarDays)
+                        {
+                            <th class="pm-res-day-header @(IsWeekend(day) ? "pm-res-weekend-header" : "")"
+                                style="@(day.DayOfWeek == DayOfWeek.Monday ? "border-left:2px solid var(--mud-palette-lines-default);" : "")">
+                                @day.ToString("ddd")[0]
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var member in _members)
+                    {
+                        <!-- Team member row -->
+                        <tr class="pm-res-member-row" @onclick="() => ToggleMember(member)">
+                            <td class="pm-res-name-col">
+                                <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudIconButton Icon="@(member.Expanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ChevronRight)"
+                                                   Size="Size.Small" Style="padding:0; width:20px; height:20px;" />
+                                    <MudAvatar Style="@($"background:{member.AvatarColor}; width:28px; height:28px; font-size:11px;")">
+                                        @member.Initials
+                                    </MudAvatar>
+                                    <span style="font-size:13px; font-weight:500;">@member.Name</span>
+                                </MudStack>
+                            </td>
+                            @{
+                                var days = CalendarDays.ToList();
+                            }
+                            @for (int i = 0; i < TotalDays; i++)
+                            {
+                                var dayIdx = i;
+                                var date = days[i];
+                                var hrs = GetMemberHours(member, dayIdx);
+                                var weekend = IsWeekend(date);
+                                <td class="pm-res-day-cell @GetDayCellClass(hrs, weekend)"
+                                    style="@(date.DayOfWeek == DayOfWeek.Monday ? "border-left:2px solid var(--mud-palette-lines-default);" : "")">
+                                    @if (!weekend && hrs > 0) { <span>@hrs</span> }
+                                </td>
+                            }
+                        </tr>
+
+                        <!-- Expanded task sub-rows -->
+                        @if (member.Expanded)
+                        {
+                            @foreach (var task in member.Tasks)
+                            {
+                                <tr class="pm-res-task-row">
+                                    <td class="pm-res-name-col" style="padding-left:52px;">
+                                        <div style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                            <span style="color:var(--mud-palette-text-secondary); margin-right:4px;">@task.TaskName</span>
+                                            <span style="font-size:11px; opacity:.7;">@task.ProjectName</span>
+                                        </div>
+                                    </td>
+                                    @for (int i = 0; i < TotalDays; i++)
+                                    {
+                                        var dayIdx = i;
+                                        var date = days[i];
+                                        var hrs = task.HoursByDayIndex.TryGetValue(dayIdx, out var h) ? h : 0;
+                                        var weekend = IsWeekend(date);
+                                        <td class="pm-res-day-cell @GetDayCellClass(hrs, weekend)"
+                                            style="@(date.DayOfWeek == DayOfWeek.Monday ? "border-left:2px solid var(--mud-palette-lines-default);" : "")">
+                                            @if (!weekend && hrs > 0) { <span>@hrs</span> }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ══ LEGEND ══════════════════════════════════════════════════════════ -->
+    <div class="pm-resource-legend">
+        <div class="pm-legend-item">
+            <span class="pm-legend-swatch" style="background:#4caf5044; border:1px solid #4caf50;"></span>
+            Assigned
+        </div>
+        <div class="pm-legend-item">
+            <span class="pm-legend-swatch" style="background:#ff980044; border:1px solid #ff9800;"></span>
+            Over-assigned
+        </div>
+        <div class="pm-legend-item">
+            <span class="pm-legend-swatch" style="background:#ffeb3b22; border:1px solid #ffeb3b;"></span>
+            Holiday
+        </div>
+        <div class="pm-legend-item">
+            <span class="pm-legend-swatch" style="background:transparent; border:1px solid var(--mud-palette-lines-default);"></span>
+            Unassigned
+        </div>
+        <div class="pm-legend-item">
+            <span class="pm-legend-swatch" style="background:var(--mud-palette-action-default);"></span>
+            Non-working
+        </div>
+    </div>
+
+</div>

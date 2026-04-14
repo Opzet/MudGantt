@@ -1,0 +1,544 @@
+@page "/project"
+
+<PageTitle>Project Manager View — MudGantt</PageTitle>
+
+<div class="pm-project-page">
+
+    <!-- ══════════════════════════ HEADER ══════════════════════════════════ -->
+    <div class="pm-project-header">
+        <div class="pm-header-left">
+            <MudIcon Icon="@Icons.Material.Filled.AccountTree" Class="pm-header-icon" />
+            <div>
+                <MudText Typo="Typo.h6" Class="pm-project-title">Website Relaunch Project</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    @_tasks.Count(t => t.Status == "Complete") of @_tasks.Count tasks complete
+                    &bull; @_tasks.Count(t => t.IsCritical) critical tasks
+                </MudText>
+            </div>
+        </div>
+
+        <div class="pm-header-center">
+            <MudTabs @bind-ActivePanelIndex="_activeView"
+                     Class="pm-view-tabs"
+                     Elevation="0"
+                     Rounded="true"
+                     ApplyEffectsToContainer="true"
+                     PanelClass="d-none">
+                <MudTabPanel Text="Gantt" Icon="@Icons.Material.Filled.ViewTimeline" />
+                <MudTabPanel Text="Sheet" Icon="@Icons.Material.Filled.TableChart" />
+                <MudTabPanel Text="Board" Icon="@Icons.Material.Filled.ViewKanban" />
+                <MudTabPanel Text="Risk" Icon="@Icons.Material.Filled.WarningAmber" />
+            </MudTabs>
+        </div>
+
+        <div class="pm-header-right">
+            <MudTextField @bind-Value="_search"
+                          Placeholder="Search tasks…"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Class="pm-search-field"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Clearable="true" />
+            <MudAvatarGroup Max="4" Spacing="3">
+                <MudAvatar Style="background:#4caf50; width:30px; height:30px; font-size:12px;">AP</MudAvatar>
+                <MudAvatar Style="background:#2196f3; width:30px; height:30px; font-size:12px;">BJ</MudAvatar>
+                <MudAvatar Style="background:#e91e63; width:30px; height:30px; font-size:12px;">CL</MudAvatar>
+                <MudAvatar Style="background:#ff5722; width:30px; height:30px; font-size:12px;">DM</MudAvatar>
+                <MudAvatar Style="background:#9c27b0; width:30px; height:30px; font-size:12px;">EP</MudAvatar>
+                <MudAvatar Style="background:#00bcd4; width:30px; height:30px; font-size:12px;">FH</MudAvatar>
+            </MudAvatarGroup>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════ TOOLBAR (Gantt / Sheet) ════════════════ -->
+    @if (_activeView < 2)
+    {
+        <div class="pm-gantt-toolbar">
+            <MudButton StartIcon="@Icons.Material.Filled.Add"
+                       Variant="Variant.Filled" Color="Color.Primary"
+                       Size="Size.Small" OnClick="AddTask">Task</MudButton>
+            <MudButton StartIcon="@Icons.Material.Filled.Folder"
+                       Variant="Variant.Outlined" Color="Color.Primary"
+                       Size="Size.Small" OnClick="AddPhase">Phase</MudButton>
+
+            <div class="pm-toolbar-sep"></div>
+
+            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                           Size="Size.Small" Color="Color.Default"
+                           Disabled="_selectedTask is null"
+                           OnClick="DeleteTask"
+                           Title="Delete selected task" />
+            <MudIconButton Icon="@Icons.Material.Filled.FormatIndentIncrease"
+                           Size="Size.Small" Color="Color.Default"
+                           Disabled="_selectedTask is null"
+                           OnClick="IndentTask"
+                           Title="Indent" />
+            <MudIconButton Icon="@Icons.Material.Filled.FormatIndentDecrease"
+                           Size="Size.Small" Color="Color.Default"
+                           Disabled="_selectedTask is null"
+                           OnClick="OutdentTask"
+                           Title="Outdent" />
+
+            <div class="pm-toolbar-sep"></div>
+
+            <MudToggleIconButton @bind-Toggled="_showCriticalPath"
+                                 Icon="@Icons.Material.Filled.Route"
+                                 ToggledIcon="@Icons.Material.Filled.Route"
+                                 Color="Color.Default"
+                                 ToggledColor="Color.Error"
+                                 Size="Size.Small"
+                                 Title="Critical Path" />
+            <MudToggleIconButton @bind-Toggled="_showBaseline"
+                                 Icon="@Icons.Material.Outlined.Layers"
+                                 ToggledIcon="@Icons.Material.Filled.Layers"
+                                 Color="Color.Default"
+                                 ToggledColor="Color.Info"
+                                 Size="Size.Small"
+                                 Title="Show Baseline" />
+
+            <div class="pm-toolbar-sep"></div>
+
+            <MudIconButton Icon="@Icons.Material.Filled.ZoomIn"
+                           Size="Size.Small" OnClick="ZoomInAsync" Title="Zoom In" />
+            <MudIconButton Icon="@Icons.Material.Filled.ZoomOut"
+                           Size="Size.Small" OnClick="ZoomOutAsync" Title="Zoom Out" />
+            <MudIconButton Icon="@Icons.Material.Filled.FitScreen"
+                           Size="Size.Small" OnClick="ResetZoomAsync" Title="Reset Zoom" />
+
+            <div class="pm-toolbar-sep"></div>
+
+            <MudSelect @bind-Value="_statusFilter"
+                       Placeholder="Filter status"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Class="pm-toolbar-filter"
+                       Clearable="true">
+                <MudSelectItem Value="@("Not Started")">Not Started</MudSelectItem>
+                <MudSelectItem Value="@("In Progress")">In Progress</MudSelectItem>
+                <MudSelectItem Value="@("On Hold")">On Hold</MudSelectItem>
+                <MudSelectItem Value="@("Complete")">Complete</MudSelectItem>
+                <MudSelectItem Value="@("At Risk")">At Risk</MudSelectItem>
+            </MudSelect>
+        </div>
+    }
+
+    <!-- ══════════════════════════ BODY ═══════════════════════════════════ -->
+    <div class="pm-project-body">
+
+        @* ── GANTT VIEW ── *@
+        @if (_activeView == 0)
+        {
+            <MudGanttSynchronizedView @ref="_syncView"
+                                      Tasks="@DisplayedTasks.ToList()"
+                                      LayoutMetrics="@LayoutMetrics"
+                                      TaskListWidth="48%"
+                                      Elevation="0"
+                                      Class="pm-gantt-view"
+                                      SelectedTask="_selectedTask"
+                                      SelectedTaskChanged="OnTaskSelected"
+                                      HighlightedTaskIds="@HighlightedTaskIds"
+                                      DimNonHighlighted="@_showCriticalPath">
+
+                <TaskListHeader>
+                    <div class="pm-task-grid-header">
+                        <span class="pm-col-wbs">#</span>
+                        <span class="pm-col-name">Task Name</span>
+                        <span class="pm-col-status">Status</span>
+                        <span class="pm-col-assignee" title="Assignee"></span>
+                        <span class="pm-col-start">Start</span>
+                        <span class="pm-col-finish">Finish</span>
+                        <span class="pm-col-days">Days</span>
+                        <span class="pm-col-pct">%</span>
+                    </div>
+                </TaskListHeader>
+
+                <TaskListRowTemplate Context="row">
+                    <div class="pm-task-grid-row" @ondblclick="() => OpenTaskDrawer(row.Task)">
+                        <span class="pm-col-wbs pm-wbs-text">@row.Task.WbsNumber</span>
+                        <span class="pm-col-name">
+                            <span class="pm-task-name-indent" style="padding-left: @(row.Task.IndentLevel * 16)px">
+                                @if (row.Task.IsPhase)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.FolderOpen"
+                                             Style="font-size:14px; margin-right:4px; color:#0891b2; vertical-align:middle;" />
+                                }
+                                else if (row.Task.IsCritical && _showCriticalPath)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.PriorityHigh"
+                                             Style="font-size:12px; margin-right:3px; color:#f44336; vertical-align:middle;" />
+                                }
+                                <span class="@(row.Task.IsPhase ? "pm-phase-name" : "")">@row.Task.Name</span>
+                            </span>
+                        </span>
+                        <span class="pm-col-status">
+                            <span class="pm-status-badge @GetStatusClass(row.Task.Status)">@row.Task.Status</span>
+                        </span>
+                        <span class="pm-col-assignee">
+                            @if (!string.IsNullOrEmpty(row.Task.AssigneeInitials))
+                            {
+                                <MudAvatar Style="@($"background:{row.Task.AssigneeAvatarColor};width:24px;height:24px;font-size:10px;")"
+                                           Title="@row.Task.AssigneeName">
+                                    @row.Task.AssigneeInitials
+                                </MudAvatar>
+                            }
+                        </span>
+                        <span class="pm-col-start pm-date-text">@row.Task.StartDate?.ToString("MMM d")</span>
+                        <span class="pm-col-finish pm-date-text">@row.Task.EndDate?.ToString("MMM d")</span>
+                        <span class="pm-col-days pm-num-text">@GetDuration(row.Task)</span>
+                        <span class="pm-col-pct">
+                            @if (row.Task.Progress.HasValue)
+                            {
+                                <MudProgressLinear Value="@(row.Task.Progress.Value * 100)"
+                                                   Color="Color.Inherit"
+                                                   Style="@($"color:{GetProgressColor(row.Task)};")"
+                                                   Class="pm-progress-bar" />
+                            }
+                        </span>
+                    </div>
+                </TaskListRowTemplate>
+
+            </MudGanttSynchronizedView>
+        }
+
+        @* ── SHEET VIEW ── *@
+        @if (_activeView == 1)
+        {
+            <div class="pm-sheet-view">
+                <table class="pm-sheet-table">
+                    <thead>
+                        <tr>
+                            <th class="pm-col-wbs">#</th>
+                            <th class="pm-col-name">Task Name</th>
+                            <th>Status</th>
+                            <th>Assignee</th>
+                            <th>Start</th>
+                            <th>Finish</th>
+                            <th>Days</th>
+                            <th>Est. Hrs</th>
+                            <th>Act. Hrs</th>
+                            <th>%</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var task in DisplayedTasks)
+                        {
+                            <tr class="@(task == _selectedTask ? "pm-row-selected" : "")"
+                                @onclick="() => OnTaskSelected(task)"
+                                @ondblclick="() => OpenTaskDrawer(task)">
+                                <td class="pm-wbs-text">@task.WbsNumber</td>
+                                <td>
+                                    <span style="padding-left: @(task.IndentLevel * 16)px; display:inline-block;">
+                                        @if (task.IsPhase)
+                                        {
+                                            <strong>@task.Name</strong>
+                                        }
+                                        else
+                                        {
+                                            @task.Name
+                                        }
+                                    </span>
+                                </td>
+                                <td><span class="pm-status-badge @GetStatusClass(task.Status)">@task.Status</span></td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(task.AssigneeInitials))
+                                    {
+                                        <MudAvatar Style="@($"background:{task.AssigneeAvatarColor};width:24px;height:24px;font-size:10px;")"
+                                                   Title="@task.AssigneeName">@task.AssigneeInitials</MudAvatar>
+                                    }
+                                </td>
+                                <td class="pm-date-text">@task.StartDate?.ToString("MMM d, yyyy")</td>
+                                <td class="pm-date-text">@task.EndDate?.ToString("MMM d, yyyy")</td>
+                                <td class="pm-num-text">@GetDuration(task)</td>
+                                <td class="pm-num-text">@task.EstimatedHours?.ToString("N0")</td>
+                                <td class="pm-num-text">@task.ActualHours?.ToString("N0")</td>
+                                <td>@(task.Progress.HasValue ? $"{task.Progress.Value * 100:N0}%" : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @* ── BOARD VIEW ── *@
+        @if (_activeView == 2)
+        {
+            <div class="pm-board-view">
+                @foreach (var status in new[] { "Not Started", "In Progress", "On Hold", "At Risk", "Complete" })
+                {
+                    var columnTasks = _tasks.Where(t => t.Status == status && !t.IsPhase).ToList();
+                    <div class="pm-board-column">
+                        <div class="pm-board-column-header">
+                            <span class="pm-status-badge @GetStatusClass(status)">@status</span>
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@columnTasks.Count</MudChip>
+                        </div>
+                        <div class="pm-board-cards">
+                            @foreach (var task in columnTasks)
+                            {
+                                <div class="pm-board-card" @onclick="() => OpenTaskDrawer(task)">
+                                    <div class="pm-board-card-bar" style="background: @(task.Color ?? "#6366f1")"></div>
+                                    <div class="pm-board-card-body">
+                                        <div class="pm-board-card-wbs">@task.WbsNumber</div>
+                                        <div class="pm-board-card-name">@task.Name</div>
+                                        <div class="pm-board-card-footer">
+                                            <span class="pm-date-text">@task.EndDate?.ToString("MMM d")</span>
+                                            @if (!string.IsNullOrEmpty(task.AssigneeInitials))
+                                            {
+                                                <MudAvatar Style="@($"background:{task.AssigneeAvatarColor};width:20px;height:20px;font-size:9px;")">
+                                                    @task.AssigneeInitials
+                                                </MudAvatar>
+                                            }
+                                        </div>
+                                        @if (task.Progress.HasValue)
+                                        {
+                                            <MudProgressLinear Value="@(task.Progress.Value * 100)"
+                                                               Color="Color.Inherit"
+                                                               Style="@($"color:{GetProgressColor(task)}; margin-top:6px;")" />
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @* ── RISK / RAID VIEW ── *@
+        @if (_activeView == 3)
+        {
+            <div class="pm-risk-view">
+                <div class="pm-risk-toolbar">
+                    <MudButton StartIcon="@Icons.Material.Filled.Add"
+                               Variant="Variant.Filled" Color="Color.Primary"
+                               Size="Size.Small" OnClick="AddRisk">Add Item</MudButton>
+                    <MudText Typo="Typo.body2" Class="pm-risk-counts">
+                        <MudChip T="string" Color="Color.Error" Size="Size.Small">@_risks.Count(r => r.Status == RiskStatus.Open) Open</MudChip>
+                        <MudChip T="string" Color="Color.Warning" Size="Size.Small">@_risks.Count(r => r.Status == RiskStatus.InReview) In Review</MudChip>
+                        <MudChip T="string" Color="Color.Success" Size="Size.Small">@_risks.Count(r => r.Status == RiskStatus.Closed) Closed</MudChip>
+                    </MudText>
+                </div>
+                <table class="pm-raid-table">
+                    <thead>
+                        <tr>
+                            <th style="width:38px">Type</th>
+                            <th>Name</th>
+                            <th style="width:80px">Priority</th>
+                            <th style="width:78px">Status</th>
+                            <th style="width:68px">Impact</th>
+                            <th style="width:78px">Likelihood</th>
+                            <th style="width:44px">Score</th>
+                            <th style="width:80px">Response</th>
+                            <th style="width:80px">Due Date</th>
+                            <th style="width:44px">Owner</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var risk in _risks)
+                        {
+                            <tr class="@(risk == _selectedRisk ? "pm-row-selected" : "")"
+                                @onclick="() => OpenRiskDrawer(risk)">
+                                <td>
+                                    <span class="pm-raid-type-badge @GetRaidTypeClass(risk.Type)">
+                                        @GetRaidTypeInitial(risk.Type)
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="pm-risk-name">@risk.Name</span>
+                                    @if (risk.Tags is { Length: > 0 })
+                                    {
+                                        <div class="pm-risk-tags">
+                                            @foreach (var tag in risk.Tags)
+                                            {
+                                                <span class="pm-tag">@tag</span>
+                                            }
+                                        </div>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="pm-priority-text pm-priority-@risk.Priority.ToString().ToLower()">
+                                        @risk.Priority
+                                    </span>
+                                </td>
+                                <td><span class="pm-status-badge @GetStatusClass(risk.Status == RiskStatus.Open ? "At Risk" : risk.Status == RiskStatus.InReview ? "In Progress" : "Complete")">@risk.Status</span></td>
+                                <td><span class="pm-level-@risk.Impact.ToString().ToLower()">@risk.Impact</span></td>
+                                <td><span class="pm-level-@risk.Likelihood.ToString().ToLower()">@risk.Likelihood</span></td>
+                                <td>
+                                    <span class="pm-risk-score-badge @GetScoreClass(risk.RiskScore)">
+                                        @risk.RiskScore
+                                    </span>
+                                </td>
+                                <td>@risk.Response</td>
+                                <td class="pm-date-text">@risk.DueDate?.ToString("MMM d, yyyy")</td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(risk.AssigneeInitials))
+                                    {
+                                        <MudAvatar Style="@($"background:{risk.AssigneeAvatarColor};width:24px;height:24px;font-size:10px;")"
+                                                   Title="@risk.AssigneeName">@risk.AssigneeInitials</MudAvatar>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+    </div>
+</div>
+
+<!-- ══════════════════════════ DETAIL DRAWER ══════════════════════════════ -->
+<MudDrawer @bind-Open="_drawerOpen"
+           Anchor="Anchor.Right"
+           Variant="DrawerVariant.Temporary"
+           Width="400px"
+           Elevation="4">
+    <MudDrawerHeader>
+        <MudStack Row AlignItems="AlignItems.Center" Class="flex-grow-1">
+            @if (_selectedTask is not null)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.Task" Color="Color.Primary" />
+                <MudText Typo="Typo.h6" Class="flex-grow-1">Task Details</MudText>
+            }
+            else if (_selectedRisk is not null)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Color="Color.Warning" />
+                <MudText Typo="Typo.h6" Class="flex-grow-1">RAID Item</MudText>
+            }
+            <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseDrawer" Size="Size.Small" />
+        </MudStack>
+    </MudDrawerHeader>
+
+    <MudDrawerContainer Class="pa-4">
+
+        @* ── TASK DETAIL ── *@
+        @if (_selectedTask is not null)
+        {
+            <MudStack Spacing="3">
+                <MudTextField @bind-Value="_editTask.Name" Label="Task Name" Variant="Variant.Outlined" />
+                <MudTextField @bind-Value="_editTask.WbsNumber" Label="WBS Number" Variant="Variant.Outlined" />
+                <MudSelect @bind-Value="_editTask.Status" Label="Status" Variant="Variant.Outlined">
+                    <MudSelectItem Value="@("Not Started")">Not Started</MudSelectItem>
+                    <MudSelectItem Value="@("In Progress")">In Progress</MudSelectItem>
+                    <MudSelectItem Value="@("On Hold")">On Hold</MudSelectItem>
+                    <MudSelectItem Value="@("At Risk")">At Risk</MudSelectItem>
+                    <MudSelectItem Value="@("Complete")">Complete</MudSelectItem>
+                </MudSelect>
+                <MudDatePicker @bind-Date="EditStartDate" Label="Start Date" Variant="Variant.Outlined" />
+                <MudDatePicker @bind-Date="EditEndDate" Label="Finish Date" Variant="Variant.Outlined" />
+                <MudNumericField @bind-Value="_editTask.EstimatedHours" Label="Estimated Hours"
+                                 Variant="Variant.Outlined" Format="N0" />
+                <MudNumericField @bind-Value="_editTask.ActualHours" Label="Actual Hours"
+                                 Variant="Variant.Outlined" Format="N0" />
+                @{
+                    double progressVal = _editTask.Progress ?? 0.0;
+                }
+                <MudSlider Value="progressVal"
+                           ValueChanged="@((double v) => _editTask.Progress = v)"
+                           Min="0.0" Max="1.0" Step="0.05"
+                           Color="Color.Primary" Class="pm-progress-slider">
+                    <MudText Typo="Typo.caption">Progress: @($"{progressVal * 100:N0}%")</MudText>
+                </MudSlider>
+                <MudTextField @bind-Value="_editTask.AssigneeName" Label="Assignee" Variant="Variant.Outlined" />
+                <MudStack Row Justify="Justify.SpaceBetween">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveTask">Save</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="DeleteTask">Delete</MudButton>
+                </MudStack>
+            </MudStack>
+        }
+
+        @* ── RISK DETAIL ── *@
+        @if (_selectedRisk is not null)
+        {
+            <MudStack Spacing="3">
+                <MudTextField @bind-Value="_editRisk.Name" Label="Name" Variant="Variant.Outlined" Lines="2" />
+
+                <MudStack Row Spacing="2">
+                    <MudSelect @bind-Value="_editRisk.Type" Label="Type" Variant="Variant.Outlined">
+                        @foreach (var t in Enum.GetValues<RaidItemType>())
+                        {
+                            <MudSelectItem Value="@t">@t</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudSelect @bind-Value="_editRisk.Priority" Label="Priority" Variant="Variant.Outlined">
+                        @foreach (var p in Enum.GetValues<RiskPriority>())
+                        {
+                            <MudSelectItem Value="@p">@p</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudStack>
+
+                <MudStack Row Spacing="2">
+                    <MudSelect @bind-Value="_editRisk.Impact" Label="Impact" Variant="Variant.Outlined">
+                        @foreach (var l in Enum.GetValues<RiskLevel>())
+                        {
+                            <MudSelectItem Value="@l">@l</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudSelect @bind-Value="_editRisk.Likelihood" Label="Likelihood" Variant="Variant.Outlined">
+                        @foreach (var l in Enum.GetValues<RiskLevel>())
+                        {
+                            <MudSelectItem Value="@l">@l</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudStack>
+
+                <!-- 3×3 Risk Matrix -->
+                <div class="pm-risk-matrix-wrap">
+                    <MudText Typo="Typo.caption" Class="pm-matrix-label">Risk Matrix — Impact × Likelihood</MudText>
+                    <div class="pm-risk-matrix">
+                        <div class="pm-matrix-axis-y">Impact</div>
+                        @foreach (var impact in Enum.GetValues<RiskLevel>().Reverse())
+                        {
+                            @foreach (var likelihood in Enum.GetValues<RiskLevel>())
+                            {
+                                <div class="pm-matrix-cell @GetMatrixCellClass(impact, likelihood, _editRisk)"
+                                     title="Impact: @impact, Likelihood: @likelihood">
+                                    @if (_editRisk.Impact == impact && _editRisk.Likelihood == likelihood)
+                                    {
+                                        <MudIcon Icon="@Icons.Material.Filled.Circle" Style="font-size:10px;" />
+                                    }
+                                </div>
+                            }
+                        }
+                        <div class="pm-matrix-axis-x">Likelihood →</div>
+                    </div>
+                </div>
+
+                <MudStack Row Spacing="2">
+                    <MudSelect @bind-Value="_editRisk.Response" Label="Response" Variant="Variant.Outlined">
+                        @foreach (var r in Enum.GetValues<RiskResponse>())
+                        {
+                            <MudSelectItem Value="@r">@r</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudSelect @bind-Value="_editRisk.Status" Label="Status" Variant="Variant.Outlined">
+                        @foreach (var s in Enum.GetValues<RiskStatus>())
+                        {
+                            <MudSelectItem Value="@s">@s</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudStack>
+
+                <MudTextField @bind-Value="_editRisk.Description" Label="Description"
+                              Variant="Variant.Outlined" Lines="3" />
+                <MudTextField @bind-Value="_editRisk.Resolution" Label="Resolution / Notes"
+                              Variant="Variant.Outlined" Lines="2" />
+                <MudTextField @bind-Value="_editRisk.AssigneeName" Label="Owner" Variant="Variant.Outlined" />
+
+                <div class="pm-risk-score-summary">
+                    <span>Risk Score: </span>
+                    <span class="pm-risk-score-badge @GetScoreClass(_editRisk.RiskScore)">
+                        @_editRisk.RiskScore — @_editRisk.RiskScoreLabel
+                    </span>
+                </div>
+
+                <MudStack Row Justify="Justify.SpaceBetween">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveRisk">Save</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="DeleteRisk">Delete</MudButton>
+                </MudStack>
+            </MudStack>
+        }
+
+    </MudDrawerContainer>
+</MudDrawer>
