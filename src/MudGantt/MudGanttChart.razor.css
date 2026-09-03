@@ -140,6 +140,11 @@
     pointer-events: none;
 }
 
+.mud-gantt ::deep rect[data-type="off-hours-band"] {
+    fill: rgba(128, 128, 128, 0.08);
+    pointer-events: none;
+}
+
 .mud-gantt ::deep rect[data-type="axis-background"] {
     fill: none;
 }

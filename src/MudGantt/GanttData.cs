@@ -62,6 +62,16 @@ namespace MudGantt
         public required MudGanttLayoutMetrics LayoutMetrics { get; set; }
 
         /// <summary>
+        /// Optional timeline grid style override. Supported values: auto, quarter-hour, hour, day, week.
+        /// </summary>
+        public string? GridStyle { get; set; }
+
+        /// <summary>
+        /// Optional fixed timeline tick interval in minutes.
+        /// </summary>
+        public int? TimeScaleTickMinutes { get; set; }
+
+        /// <summary>
         /// Optional selector for a vertically synchronized external scroll surface.
         /// </summary>
         public string? SyncVerticalScrollSelector { get; set; }

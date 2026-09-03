@@ -129,6 +129,16 @@ namespace MudGantt
         [Parameter] public string? SyncVerticalScrollSelector { get; set; }
 
         /// <summary>
+        /// Optional timeline grid style override. Supported values: auto, quarter-hour, hour, day, week.
+        /// </summary>
+        [Parameter] public string? GridStyle { get; set; }
+
+        /// <summary>
+        /// Optional fixed timeline tick interval in minutes.
+        /// </summary>
+        [Parameter] public int? TimeScaleTickMinutes { get; set; }
+
+        /// <summary>
         /// Raised when the horizontal timeline scroll position changes. Value is a 0-1 ratio.
         /// </summary>
         [Parameter] public EventCallback<double> HorizontalScrollRatioChanged { get; set; }
@@ -260,6 +270,8 @@ namespace MudGantt
                 ScrollSelectedIntoView = ScrollSelectedIntoView,
                 HighlightedTaskIds = HighlightedTaskIds,
                 DimNonHighlighted = DimNonHighlighted,
+                GridStyle = GridStyle,
+                TimeScaleTickMinutes = TimeScaleTickMinutes,
                 SyncVerticalScrollSelector = SyncVerticalScrollSelector
             };
         }

@@ -121,6 +121,7 @@ class GanntChart {
         this.options.footerHeight = 50;
         this.options.minDayPixelWidth = 32;
         this.options.minHourPixelWidth = 60;
+        this.options.minQuarterHourPixelWidth = 22;
         this.options.maxGridLines = 600;
         this.options.minTickLabelSpacingPx = 56;
 
@@ -289,7 +290,9 @@ class GanntChart {
         const gridStyle = this.#resolveGridStyle();
 
         let preferredWidth = parentWidth;
-        if (gridStyle === 'hour') {
+        if (gridStyle === 'quarter-hour') {
+            preferredWidth = Math.ceil(rangeInHours * 4 * this.options.minQuarterHourPixelWidth);
+        } else if (gridStyle === 'hour') {
             preferredWidth = Math.ceil(rangeInHours * this.options.minHourPixelWidth);
         } else {
             preferredWidth = Math.ceil(rangeInDays * this.options.minDayPixelWidth);
@@ -307,7 +310,11 @@ class GanntChart {
         const oneHour = 60 * 60 * 1000;
         const diffHours = Math.abs((this.maxDate - this.minDate) / oneHour);
 
-        if (diffHours <= 48) {
+        if (diffHours <= 24) {
+            return 'quarter-hour';
+        }
+
+        if (diffHours <= 96) {
             return 'hour';
         }
 
@@ -618,10 +625,16 @@ class GanntChart {
         //this.#addGridLine(this.viewBoxWidth);
 
         let stepMs = 24 * 60 * 60 * 1000;
-        if (gridStyle == 'hour') {
+        if (gridStyle == 'quarter-hour') {
+            stepMs = 15 * 60 * 1000;
+        } else if (gridStyle == 'hour') {
             stepMs = 60 * 60 * 1000;
         } else if (gridStyle == 'week') {
             stepMs = 7 * 24 * 60 * 60 * 1000;
+        }
+
+        if (this.options.timeScaleTickMinutes) {
+            stepMs = this.options.timeScaleTickMinutes * 60 * 1000;
         }
 
         const minTickSpacingPx = this.options.minTickLabelSpacingPx;
@@ -637,8 +650,10 @@ class GanntChart {
         }
 
         let date = new Date(this.minDate);
-        if (gridStyle == 'hour') {
-            date.setMinutes(0, 0, 0);
+        if (gridStyle == 'quarter-hour' || gridStyle == 'hour') {
+            const stepMinutes = Math.max(1, Math.floor(stepMs / (60 * 1000)));
+            const alignedMinutes = Math.floor(date.getMinutes() / stepMinutes) * stepMinutes;
+            date.setMinutes(alignedMinutes, 0, 0);
         } else {
             date.setUTCHours(0, 0, 0, 0);
         }
@@ -675,8 +690,9 @@ class GanntChart {
 
             const displayDate = m.local();
 
-            if (gridStyle == 'hour') {
+            if (gridStyle == 'quarter-hour' || gridStyle == 'hour') {
                 const hourChanged = state.hour != axisDate.getHours();
+                const minuteChanged = state.minute != axisDate.getMinutes();
 
                 if (yearChanged || monthChanged || dateChanged) {
                     if (this.#canRenderAxisLabel(state, "hour-day", x, 84)) {
@@ -691,11 +707,12 @@ class GanntChart {
                     }
                 }
 
-                if (hourChanged) {
+                const shouldRenderTimeLabel = gridStyle == 'quarter-hour' ? (hourChanged || minuteChanged) : hourChanged;
+                if (shouldRenderTimeLabel) {
                     if (this.#canRenderAxisLabel(state, "hour", x, this.options.minTickLabelSpacingPx)) {
                         const hourTextElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
                         hourTextElement.setAttribute('data-type', "axis-date");
-                        hourTextElement.setAttribute('data-subtype', "hour");
+                        hourTextElement.setAttribute('data-subtype', gridStyle == 'quarter-hour' ? "quarter-hour" : "hour");
                         hourTextElement.setAttribute('x', x);
                         hourTextElement.setAttribute('y', this.options.axisPadding + h * 2 / 3);
                         hourTextElement.setAttribute('text-anchor', textAnchor);
@@ -708,6 +725,7 @@ class GanntChart {
                 state.month = axisDate.getMonth();
                 state.date = axisDate.getDate();
                 state.hour = axisDate.getHours();
+                state.minute = axisDate.getMinutes();
                 return;
             }
 
@@ -822,6 +840,52 @@ class GanntChart {
 
             date.setUTCDate(date.getUTCDate() + 1);
         }
+    }
+
+    #addOffHoursBands() {
+        const gridStyle = this.#resolveGridStyle();
+        if (gridStyle !== 'quarter-hour' && gridStyle !== 'hour') {
+            return;
+        }
+
+        const offHoursStartMorning = 0;
+        const offHoursEndMorning = 6;
+        const offHoursStartEvening = 18;
+        const offHoursEndEvening = 24;
+
+        const date = new Date(this.minDate);
+        date.setHours(0, 0, 0, 0);
+
+        while (date < this.maxDate) {
+            this.#addOffHoursBandForRange(date, offHoursStartMorning, offHoursEndMorning);
+            this.#addOffHoursBandForRange(date, offHoursStartEvening, offHoursEndEvening);
+            date.setDate(date.getDate() + 1);
+        }
+    }
+
+    #addOffHoursBandForRange(dayDate, startHour, endHour) {
+        const start = new Date(dayDate);
+        start.setHours(startHour, 0, 0, 0);
+
+        const end = new Date(dayDate);
+        end.setHours(endHour, 0, 0, 0);
+
+        const clippedStartEpochs = Math.max(start.getTime(), this.minEpochs);
+        const clippedEndEpochs = Math.min(end.getTime(), this.maxEpochs);
+        if (clippedEndEpochs <= clippedStartEpochs) {
+            return;
+        }
+
+        const startX = (clippedStartEpochs - this.minEpochs) * this.viewBoxWidth / this.range;
+        const endX = (clippedEndEpochs - this.minEpochs) * this.viewBoxWidth / this.range;
+
+        const band = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        band.setAttribute("data-type", "off-hours-band");
+        band.setAttribute("x", startX);
+        band.setAttribute("y", this.options.axisHeight);
+        band.setAttribute("width", Math.max(0, endX - startX));
+        band.setAttribute("height", this.viewBoxHeight - this.options.axisHeight - this.options.footerHeight);
+        this.ganttChart.appendChild(band);
     }
 
     #addEvents() {
@@ -994,6 +1058,15 @@ class GanntChart {
         this.options.taskHeight = layoutMetrics.taskHeight ?? 50;
         this.options.axisHeight = layoutMetrics.axisHeight ?? 50;
 
+        const requestedGrid = (data.gridStyle ?? "auto").toString().toLowerCase();
+        const allowedGridStyles = ["auto", "quarter-hour", "hour", "day", "week"];
+        this.options.grid = allowedGridStyles.includes(requestedGrid) ? requestedGrid : "auto";
+
+        const configuredTickMinutes = Number.parseInt(data.timeScaleTickMinutes, 10);
+        this.options.timeScaleTickMinutes = Number.isFinite(configuredTickMinutes) && configuredTickMinutes > 0
+            ? configuredTickMinutes
+            : null;
+
         this.data = data;
 
         this.#reset();
@@ -1018,6 +1091,7 @@ class GanntChart {
         }
 
         this.#addNonWorkingBands();
+        this.#addOffHoursBands();
 
         for (const task of this.tasks) {
 
