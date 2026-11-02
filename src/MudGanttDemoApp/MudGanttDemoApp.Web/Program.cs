@@ -6,6 +6,12 @@ using MudGanttDemoApp.Web.ManufacturingApi;
 using MudGanttDemoApp.Web.SchedulerApi;
 using MudBlazor.Services;
 
+using System.Globalization;
+
+
+CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-AU");
+CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("en-AU");
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
