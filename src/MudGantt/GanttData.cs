@@ -72,6 +72,16 @@ namespace MudGantt
         public int? TimeScaleTickMinutes { get; set; }
 
         /// <summary>
+        /// Enables rendering of weekend/non-working day background bands.
+        /// </summary>
+        public bool ShowNonWorkingBands { get; set; } = true;
+
+        /// <summary>
+        /// Enables rendering of off-hours background bands.
+        /// </summary>
+        public bool ShowOffHoursBands { get; set; } = true;
+
+        /// <summary>
         /// Optional selector for a vertically synchronized external scroll surface.
         /// </summary>
         public string? SyncVerticalScrollSelector { get; set; }

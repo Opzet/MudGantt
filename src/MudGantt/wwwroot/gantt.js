@@ -1090,8 +1090,13 @@ class GanntChart {
             this.#addEvents();
         }
 
-        this.#addNonWorkingBands();
-        this.#addOffHoursBands();
+        if (this.data.showNonWorkingBands === true) {
+            this.#addNonWorkingBands();
+        }
+
+        if (this.data.showOffHoursBands === true) {
+            this.#addOffHoursBands();
+        }
 
         for (const task of this.tasks) {
 

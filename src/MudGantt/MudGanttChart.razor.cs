@@ -139,6 +139,16 @@ namespace MudGantt
         [Parameter] public int? TimeScaleTickMinutes { get; set; }
 
         /// <summary>
+        /// Enables rendering of weekend/non-working day background bands.
+        /// </summary>
+        [Parameter] public bool ShowNonWorkingBands { get; set; } = true;
+
+        /// <summary>
+        /// Enables rendering of off-hours background bands.
+        /// </summary>
+        [Parameter] public bool ShowOffHoursBands { get; set; } = true;
+
+        /// <summary>
         /// Raised when the horizontal timeline scroll position changes. Value is a 0-1 ratio.
         /// </summary>
         [Parameter] public EventCallback<double> HorizontalScrollRatioChanged { get; set; }
@@ -272,6 +282,8 @@ namespace MudGantt
                 DimNonHighlighted = DimNonHighlighted,
                 GridStyle = GridStyle,
                 TimeScaleTickMinutes = TimeScaleTickMinutes,
+                ShowNonWorkingBands = ShowNonWorkingBands,
+                ShowOffHoursBands = ShowOffHoursBands,
                 SyncVerticalScrollSelector = SyncVerticalScrollSelector
             };
         }
