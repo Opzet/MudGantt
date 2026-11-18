@@ -146,14 +146,14 @@
                                 @if (!string.IsNullOrEmpty(risk.AssigneeInitials))
                                 {
                                     <MudAvatar Style="@($"background:{risk.AssigneeAvatarColor};width:24px;height:24px;font-size:10px;")"
-                                               Title="@risk.AssigneeName">@risk.AssigneeInitials</MudAvatar>
+                                               title="@risk.AssigneeName">@risk.AssigneeInitials</MudAvatar>
                                 }
                             </td>
                             <td>
                                 <MudIconButton Icon="@Icons.Material.Filled.OpenInFull"
                                                Size="Size.Small"
                                                OnClick="@(() => OpenCard(risk))"
-                                               Title="Open" />
+                                               title="Open" />
                             </td>
                         </tr>
                     }

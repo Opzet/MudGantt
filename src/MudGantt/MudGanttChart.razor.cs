@@ -243,7 +243,6 @@ namespace MudGantt
         /// <summary>
         /// Resets the zoom to the initial state
         /// </summary>
-        /// <param name="amount"></param>
         /// <returns></returns>
         public async Task ResetZoomAsync()
         {
@@ -329,8 +328,6 @@ namespace MudGantt
         /// Callback from JS when the task was clicked
         /// </summary>
         /// <param name="id"></param>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
         /// <returns></returns>
         internal async Task OnTaskClickedAsync(string id)
         {

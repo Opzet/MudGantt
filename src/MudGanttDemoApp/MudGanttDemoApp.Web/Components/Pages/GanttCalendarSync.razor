@@ -12,7 +12,7 @@
                 <MudText Typo="Typo.h4">Gantt + Calendar synchronized view</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary">Shared project data, shared phase filter, and synchronized summary for timeline + calendar planning.</MudText>
             </div>
-            <MudChipSet T="string" SelectedValue="@_selectedPhase" SelectedValueChanged="OnPhaseChanged" Mandatory="false">
+            <MudChipSet T="string" SelectedValue="@_selectedPhase" SelectedValueChanged="OnPhaseChanged">
                 <MudChip Value="@AllPhase">All</MudChip>
                 @foreach (var phase in _phases)
                 {

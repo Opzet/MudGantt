@@ -23,7 +23,7 @@
                      Elevation="0"
                      Rounded="true"
                      ApplyEffectsToContainer="true"
-                     PanelClass="d-none">
+                     TabPanelsClass="d-none">
                 <MudTabPanel Text="Gantt" Icon="@Icons.Material.Filled.ViewTimeline" />
                 <MudTabPanel Text="Sheet" Icon="@Icons.Material.Filled.TableChart" />
                 <MudTabPanel Text="Board" Icon="@Icons.Material.Filled.ViewKanban" />
@@ -68,17 +68,17 @@
                            Size="Size.Small" Color="Color.Default"
                            Disabled="_selectedTask is null"
                            OnClick="DeleteTask"
-                           Title="Delete selected task" />
+                           title="Delete selected task" />
             <MudIconButton Icon="@Icons.Material.Filled.FormatIndentIncrease"
                            Size="Size.Small" Color="Color.Default"
                            Disabled="_selectedTask is null"
                            OnClick="IndentTask"
-                           Title="Indent" />
+                           title="Indent" />
             <MudIconButton Icon="@Icons.Material.Filled.FormatIndentDecrease"
                            Size="Size.Small" Color="Color.Default"
                            Disabled="_selectedTask is null"
                            OnClick="OutdentTask"
-                           Title="Outdent" />
+                           title="Outdent" />
 
             <div class="pm-toolbar-sep"></div>
 
@@ -88,23 +88,23 @@
                                  Color="Color.Default"
                                  ToggledColor="Color.Error"
                                  Size="Size.Small"
-                                 Title="Critical Path" />
+                                 title="Critical Path" />
             <MudToggleIconButton @bind-Toggled="_showBaseline"
                                  Icon="@Icons.Material.Outlined.Layers"
                                  ToggledIcon="@Icons.Material.Filled.Layers"
                                  Color="Color.Default"
                                  ToggledColor="Color.Info"
                                  Size="Size.Small"
-                                 Title="Show Baseline" />
+                                 title="Show Baseline" />
 
             <div class="pm-toolbar-sep"></div>
 
             <MudIconButton Icon="@Icons.Material.Filled.ZoomIn"
-                           Size="Size.Small" OnClick="ZoomInAsync" Title="Zoom In" />
+                           Size="Size.Small" OnClick="ZoomInAsync" title="Zoom In" />
             <MudIconButton Icon="@Icons.Material.Filled.ZoomOut"
-                           Size="Size.Small" OnClick="ZoomOutAsync" Title="Zoom Out" />
+                           Size="Size.Small" OnClick="ZoomOutAsync" title="Zoom Out" />
             <MudIconButton Icon="@Icons.Material.Filled.FitScreen"
-                           Size="Size.Small" OnClick="ResetZoomAsync" Title="Reset Zoom" />
+                           Size="Size.Small" OnClick="ResetZoomAsync" title="Reset Zoom" />
 
             <div class="pm-toolbar-sep"></div>
 
@@ -178,7 +178,7 @@
                             @if (!string.IsNullOrEmpty(row.Task.AssigneeInitials))
                             {
                                 <MudAvatar Style="@($"background:{row.Task.AssigneeAvatarColor};width:24px;height:24px;font-size:10px;")"
-                                           Title="@row.Task.AssigneeName">
+                                           title="@row.Task.AssigneeName">
                                     @row.Task.AssigneeInitials
                                 </MudAvatar>
                             }
@@ -244,7 +244,7 @@
                                     @if (!string.IsNullOrEmpty(task.AssigneeInitials))
                                     {
                                         <MudAvatar Style="@($"background:{task.AssigneeAvatarColor};width:24px;height:24px;font-size:10px;")"
-                                                   Title="@task.AssigneeName">@task.AssigneeInitials</MudAvatar>
+                                                   title="@task.AssigneeName">@task.AssigneeInitials</MudAvatar>
                                     }
                                 </td>
                                 <td class="pm-date-text">@task.StartDate?.ToString("MMM d, yyyy")</td>
@@ -374,7 +374,7 @@
                                     @if (!string.IsNullOrEmpty(risk.AssigneeInitials))
                                     {
                                         <MudAvatar Style="@($"background:{risk.AssigneeAvatarColor};width:24px;height:24px;font-size:10px;")"
-                                                   Title="@risk.AssigneeName">@risk.AssigneeInitials</MudAvatar>
+                                                   title="@risk.AssigneeName">@risk.AssigneeInitials</MudAvatar>
                                     }
                                 </td>
                             </tr>
